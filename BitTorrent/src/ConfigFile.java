@@ -29,42 +29,55 @@ public class ConfigFile {
 	public int getNoOfNeighbors() {
 		return noOfNeighbors;
 	}
+	
 	public void setNoOfNeighbors(int noOfNeighbors) {
 		this.noOfNeighbors = noOfNeighbors;
 	}
+	
 	public int getUnChokingInterval() {
 		return unChokingInterval;
 	}
+	
 	public void setUnChokingInterval(int unChokingInterval) {
 		this.unChokingInterval = unChokingInterval;
 	}
+	
 	public int getOptUnChokingInterval() {
 		return optUnChokingInterval;
 	}
+	
 	public void setOptUnChokingInterval(int optUnChokingInterval) {
 		this.optUnChokingInterval = optUnChokingInterval;
 	}
+	
 	public String getFileName() {
 		return fileName;
 	}
+	
 	public void setFileName(String fileName) {
 		this.fileName = fileName;
 	}
+	
 	public int getFileSize() {
 		return fileSize;
 	}
+	
 	public void setFileSize(int fileSize) {
 		this.fileSize = fileSize;
 	}
+	
 	public int getChunkSize() {
 		return chunkSize;
 	}
+	
 	public void setChunkSize(int chunkSize) {
 		this.chunkSize = chunkSize;
 	}
+	
 	public int getNoOfChunks() {
 		return noOfChunks;
 	}
+	
 	public void setNoOfChunks(int noOfChunks) {
 		this.noOfChunks = noOfChunks;
 	}
