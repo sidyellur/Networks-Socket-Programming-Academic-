@@ -1,0 +1,5 @@
+class WrongPacketException extends Exception {
+    public WrongPacketException(String s) {
+        super(s);
+    }
+}
