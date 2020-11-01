@@ -7,6 +7,25 @@ public class PeerNode {
 	private int[] pieces = null;
 	private int noOfChunks = 0;
 	
+	private PeerNode() {}
+	
+	private PeerNode(int peerId, String hostName, int portNumber, int haveFile) {
+		this.setPeerId(peerId);
+		this.setHostName(hostName);
+		this.setPortNumber(portNumber);
+		this.setHaveFile(haveFile);
+	}
+	
+	public static PeerNode getPeerNodeObject(String row) {		
+		String[] parameters = row.split(" ");
+		int peerId = Integer.parseInt(parameters[0]);
+		String hostName = parameters[1];
+		int portNumber = Integer.parseInt(parameters[2]);
+		int haveFile = Integer.parseInt(parameters[3]);
+		PeerNode pn = new PeerNode(peerId,hostName,portNumber,haveFile);
+		return pn;
+	}
+	
 	public int getPeerId() {
 		return peerId;
 	}
@@ -54,6 +73,5 @@ public class PeerNode {
 	public void setNoOfChunks(int noOfChunks) {
 		this.noOfChunks = noOfChunks;
 	}
-
 
 }

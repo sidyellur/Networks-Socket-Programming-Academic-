@@ -12,15 +12,28 @@ public class ConfigFile {
 	
 	private ConfigFile() {}
 	
+	private ConfigFile(int noOfNeighbors,int unChokingInterval,int optUnChokingInterval,String fileName,int fileSize,int chunkSize) {
+		
+		this.setNoOfNeighbors(noOfNeighbors);
+		this.setUnChokingInterval(unChokingInterval);
+		this.setOptUnChokingInterval(optUnChokingInterval);
+		this.setFileName(fileName);
+		this.setFileSize(fileSize);
+		this.setChunkSize(chunkSize);
+		
+	}
+	
 	public static ConfigFile getConfigFileObject(List<String> rows) {
+		
 		if(rows != null && rows.size() == 6) {
-			ConfigFile configFileObj = new ConfigFile();
-			configFileObj.setNoOfNeighbors(Integer.parseInt(rows.get(0).split(" ")[1]));
-			configFileObj.setUnChokingInterval(Integer.parseInt(rows.get(1).split(" ")[1]));
-			configFileObj.setOptUnChokingInterval(Integer.parseInt(rows.get(2).split(" ")[1]));
-			configFileObj.setFileName(rows.get(3).split(" ")[1]);
-			configFileObj.setFileSize(Integer.parseInt(rows.get(4).split(" ")[1]));
-			configFileObj.setChunkSize(Integer.parseInt(rows.get(5).split(" ")[1]));
+			int noOfNeighbors = Integer.parseInt(rows.get(0).split(" ")[1]);
+			int unChokingInterval = Integer.parseInt(rows.get(1).split(" ")[1]);
+			int optUnChokingInterval = Integer.parseInt(rows.get(2).split(" ")[1]);
+			String fileName = rows.get(3).split(" ")[1];
+			int fileSize = Integer.parseInt(rows.get(4).split(" ")[1]);
+			int chunkSize = Integer.parseInt(rows.get(5).split(" ")[1]);
+			
+			ConfigFile configFileObj = new ConfigFile(noOfNeighbors,unChokingInterval,optUnChokingInterval,fileName,fileSize,chunkSize);
 			return configFileObj;
 		}
 		return null;
