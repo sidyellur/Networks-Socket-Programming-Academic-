@@ -1,10 +1,12 @@
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PeerNode {
 	private int peerId = -1;
 	private String hostName = "";
 	private int portNumber = -1;
 	private int haveFile = 0;
-	private int[] pieces = null;
+	private ConcurrentHashMap<Integer,Integer> bitfield = null;
+
 	private int noOfChunks = 0;
 	
 	private PeerNode() {}
@@ -14,6 +16,7 @@ public class PeerNode {
 		this.setHostName(hostName);
 		this.setPortNumber(portNumber);
 		this.setHaveFile(haveFile);
+		this.setBitfield(new ConcurrentHashMap<Integer,Integer>());
 	}
 	
 	public static PeerNode getPeerNodeObject(String row) {		
@@ -58,12 +61,12 @@ public class PeerNode {
 		this.haveFile = haveFile;
 	}
 	
-	public int[] getPieces() {
-		return pieces;
+	public ConcurrentHashMap<Integer, Integer> getBitfield() {
+		return bitfield;
 	}
-	
-	public void setPieces(int[] pieces) {
-		this.pieces = pieces;
+
+	public void setBitfield(ConcurrentHashMap<Integer, Integer> bitfield) {
+		this.bitfield = bitfield;
 	}
 	
 	public int getNoOfChunks() {

@@ -20,7 +20,6 @@ public class ConfigFile {
 		this.setFileName(fileName);
 		this.setFileSize(fileSize);
 		this.setChunkSize(chunkSize);
-		
 	}
 	
 	public static ConfigFile getConfigFileObject(List<String> rows) {
@@ -34,6 +33,11 @@ public class ConfigFile {
 			int chunkSize = Integer.parseInt(rows.get(5).split(" ")[1]);
 			
 			ConfigFile configFileObj = new ConfigFile(noOfNeighbors,unChokingInterval,optUnChokingInterval,fileName,fileSize,chunkSize);
+			double fileSizeDoub = (double) fileSize;
+			double chunkSizeDoub = (double) chunkSize;
+			int noOfChunks = (int)Math.ceil(fileSizeDoub/chunkSizeDoub);
+			configFileObj.setNoOfChunks(noOfChunks);
+			System.out.println(noOfChunks);
 			return configFileObj;
 		}
 		return null;
