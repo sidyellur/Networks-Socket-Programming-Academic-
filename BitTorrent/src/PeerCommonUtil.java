@@ -70,7 +70,6 @@ public class PeerCommonUtil {
 
 }
 
-
        class GlobalHelperFunc 
   {
 
@@ -154,110 +153,6 @@ public class PeerCommonUtil {
 		return hspacket; 
 
     }
-
-	public static void logContain(BufferedWriter Write, int first_id, int sec_id, int count)
-    {
-	  Date clock = new Date(); 
-	  StringBuffer write_to_log = new StringBuffer(); 
-	  DateFormat Format = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-	  write_to_log.append(Format.format(clock) + ": The Peer [" + first_id + "] has received the message from [" +sec_id+"] for the peice: " + count + '.' ); 
-	  try { 
-
-		String fin = write_to_log.toString();
-		Write.write(fin); 
-		Write.flush(); 
-		Write.newLine(); 
-		
-	  }catch(Exception e)
-	  {}
-	}
-	  
-	 
-	public static void downloadLogPeice(BufferedWriter Write, int first_id, int sec_id, int np_peices)
-	{ 
-	  Date clock = new Date(); 
-	  StringBuffer write_to_log = new StringBuffer(); 
-	  DateFormat Format = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-	  write_to_log.append(Format.format(clock) + ": The Peer [" + first_id + "] has downloaded" + np_peices +  "from [" + sec_id +"]. " + "Number of peices is " + np_peices + '.' );
-
-	  try { 
-		String fin = write_to_log.toString();
-		Write.write(fin); 
-		Write.flush(); 
-		Write.newLine();
-	  }catch(FileNotFoundException e){
-
-	  }catch(IOException e){
-
-	  }
-   }
-
-   public static void checkDownloadComplete(BufferedWriter Write, int first_id)
-   { 
-	 DateFormat Format = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-	 Date clock = new Date(); 
-	 StringBuffer write_to_log = new StringBuffer(); 
-	 write_to_log.append(Format.format(clock) + "The download of Peer [" + first_id + "] is complete.");
-	 try { 
-
-		String fin = write_to_log.toString();
-		Write.write(fin); 
-		Write.flush(); 
-		Write.newLine(); 
-		
-	  }catch(Exception e)
-	  {}
-	}
-
-
-	public static void changeLogNeighbours(BufferedWriter Write, int first_id, int[] listId)
-	{ 
-		DateFormat Format = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-		Date clock = new Date();
-		StringBuffer write_to_log = new StringBuffer();
-		write_to_log.append(Format.format(clock) + "The Peer [" + first_id + "] has the preffered neighbours ["); 
-
-		for(int i=0;i<listId.length; i++)
-		{
-			write_to_log.append(listId(i));
-			if(i<(listId.length-1))
-			write_to_log.append(','); 
-		}
-		try { 
-
-			String fin = write_to_log.toString();
-			Write.write(fin); 
-			Write.flush(); 
-			Write.newLine(); 
-			
-		  }catch(FileNotFoundException e){
-
-		}catch(Exception e)
-		  {}
-	}
-
-	public static void logMsgType(BufferedWriter Write, int first_id, int sec_id, String MsgType)
-	{
-		DateFormat Format = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-		Date clock = new Date();
-		StringBuffer write_to_log = new StringBuffer();
-
-        switch(MsgType){
-			case "CHOKE" : 
-			write_to_log.append(Format.format(clock)+": Peer [" + first_id  +"] is choked by ["+ sec_id +"].") ;
-			break; 
-			case "UNCHOKE" : 
-			write_to_log.append(Format.format(clock)+": Peer [" + first_id  +"] is unchoked by ["+ sec_id +"].") ;
-			break; 
-			case "INTERESTED" : 
-			write_to_log.append(Format.format(clock)+": : Peer [" + first_id + "] received the 'interested' message from [" + sec_id + "]." ); 
-			break; 
-			case "NOT_INTERESTED" : 
-			write_to_log.append(Format.format(clock)+": : Peer [" + first_id + "] received the ' not interested' message from [" + sec_id + "]." ); 
-			break; 
-
-		}
-	}
 
 
    }
