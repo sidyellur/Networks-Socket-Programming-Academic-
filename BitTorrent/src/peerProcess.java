@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 public class peerProcess {
 	private static ReadFiles rfObj = null;
 	private static ConfigFile configFileReader = null;
@@ -51,13 +50,13 @@ public class peerProcess {
 					
 					//Receive handshake
 					byte[] repliedHandshake = new byte[handShakeHeader.length];
-					inputStream.read(repliedHandshake);
-					ByteBuffer repliedHandshakeBB = ByteBuffer.wrap(repliedHandshake);
-					int serverPeerId = repliedHandshakeBB.getInt();
-					System.out.println(serverPeerId);
+					inputStream.readFully(repliedHandshake);
+					//ByteBuffer repliedHandshakeBB = ByteBuffer.wrap(repliedHandshake);
+					int serverPeerId = Integer.parseInt(new String(repliedHandshake));
 					
 					//Add the socket to connection established 
 					if(serverPeerId == peerId) {
+						System.out.println(serverPeerId);
 						connectionsEstablished.put(peerId, socket);
 					}		
 					index++;
@@ -89,10 +88,10 @@ public class peerProcess {
 					
 					//Receive handshake
                     byte[] handshakePacket = new byte[String.valueOf(sourcePeerId).getBytes().length];
-                    inputStream.read(handshakePacket);
-                    ByteBuffer handshakeBB = ByteBuffer.wrap(handshakePacket);
-                    int peerId = handshakeBB.getInt();
-                    System.out.println(peerId);
+                    inputStream.readFully(handshakePacket);
+                  //  ByteBuffer handshakeBB = ByteBuffer.wrap(handshakePacket);
+                    int peerId = Integer.parseInt(new String(handshakePacket));
+                   // System.out.println("Server"+peerId);
                     
                     //send Handshake
                     byte[] sendHandshake = String.valueOf(sourcePeerId).getBytes();
@@ -144,6 +143,9 @@ public class peerProcess {
 		List<String> peerRows = rfObj.parseTheFile("PeerInfo.cfg");
 		setPeerNodes(peerRows);
 		currentPeer = allPeersLHMap.get(sourcePeerId);
+		
+		//make peer directory
+		PeerCommonUtil.makePeerDirectory(sourcePeerId);
 		
 		//start the client and server threads to initialize the TCP Connections with all the other peers
 		Client clientObj = new Client();

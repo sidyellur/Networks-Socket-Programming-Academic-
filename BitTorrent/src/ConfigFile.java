@@ -37,7 +37,7 @@ public class ConfigFile {
 			double chunkSizeDoub = (double) chunkSize;
 			int noOfChunks = (int)Math.ceil(fileSizeDoub/chunkSizeDoub);
 			configFileObj.setNoOfChunks(noOfChunks);
-			System.out.println(noOfChunks);
+		//	System.out.println(noOfChunks);
 			return configFileObj;
 		}
 		return null;
