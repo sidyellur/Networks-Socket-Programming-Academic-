@@ -155,6 +155,7 @@ public class peerProcess {
 			peersWithEntireFile++;
 			currentPeer.setNoOfChunks(totalChunks);
 			currentPeer.updateBitfield(true);
+			PeerCommonUtil.splitFileintoChunks(""+sourcePeerId, configFileObj);
 		}
 		else {
 			currentPeer.updateBitfield(false);
