@@ -5,8 +5,7 @@ public class PeerNode {
 	private String hostName = "";
 	private int portNumber = -1;
 	private int haveFile = 0;
-	private ConcurrentHashMap<Integer,Integer> bitfield = null;
-
+	private ConcurrentHashMap<Integer,Integer> bitfield = new ConcurrentHashMap<Integer,Integer>();
 	private int noOfChunks = 0;
 	
 	private PeerNode() {}
@@ -16,7 +15,6 @@ public class PeerNode {
 		this.setHostName(hostName);
 		this.setPortNumber(portNumber);
 		this.setHaveFile(haveFile);
-		this.setBitfield(new ConcurrentHashMap<Integer,Integer>());
 	}
 	
 	public static PeerNode getPeerNodeObject(String row) {		
@@ -67,6 +65,17 @@ public class PeerNode {
 
 	public void setBitfield(ConcurrentHashMap<Integer, Integer> bitfield) {
 		this.bitfield = bitfield;
+	}
+	
+	public void updateBitfield(boolean haveFile) {
+		int bit = haveFile?1:0;
+		for(int i=0;i<noOfChunks;i++) {
+			bitfield.put(i, bit);
+		}
+	}
+	
+	public void updateBitfield(int indexOfChunkReceived) {
+		bitfield.put(indexOfChunkReceived, 1);
 	}
 	
 	public int getNoOfChunks() {

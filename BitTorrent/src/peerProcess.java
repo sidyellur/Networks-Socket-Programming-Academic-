@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class peerProcess {
 	private static ReadFiles rfObj = null;
-	private static ConfigFile configFileReader = null;
+	private static ConfigFile configFileObj = null;
 	private static Map<Integer,PeerNode> allPeersLHMap = null;
 	private static int sourcePeerId = -1;
 	private static PeerNode currentPeer = null;
@@ -23,6 +23,8 @@ public class peerProcess {
 	private static int currentPeerIndex = -1;
 	private static int totalPeers = -1;
 	private static ServerSocket listener = null;
+	private static int peersWithEntireFile = 0;
+	private static int totalChunks = 0;
 
 	//Establishes TCP Connections with all the peers who started before the current peer by exchanging handshake packets with them
 	static class Client implements Runnable{
@@ -136,7 +138,8 @@ public class peerProcess {
 		//Read Common.cfg and set the ConfigFile object
 		rfObj = ReadFiles.getReadFilesObj();
 		List<String> configRows = rfObj.parseTheFile("Common.cfg");
-		configFileReader = ConfigFile.getConfigFileObject(configRows);
+		configFileObj = ConfigFile.getConfigFileObject(configRows);
+		totalChunks = configFileObj.getNoOfChunks();
 		//	System.out.println(configFileReader.getNoOfNeighbors());
 
 		//Read PeerInfo.cfg and set the PeerNode.java 
@@ -146,6 +149,16 @@ public class peerProcess {
 		
 		//make peer directory
 		PeerCommonUtil.makePeerDirectory(sourcePeerId);
+		
+		//current peer has file
+		if(currentPeer.getHaveFile() == 1) {
+			peersWithEntireFile++;
+			currentPeer.setNoOfChunks(totalChunks);
+			currentPeer.updateBitfield(true);
+		}
+		else {
+			currentPeer.updateBitfield(false);
+		}
 		
 		//start the client and server threads to initialize the TCP Connections with all the other peers
 		Client clientObj = new Client();
