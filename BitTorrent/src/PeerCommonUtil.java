@@ -35,7 +35,7 @@ public class PeerCommonUtil {
 		int chunkSize = configFileObj.getChunkSize();
 		int fileSize = configFileObj.getFileSize();
 		String sourceFile = System.getProperty("user.dir")+"\\"+PeerConstants.DOWNLOAD_FILE;
-		
+
 		try {		
 			FileInputStream fis = new FileInputStream(sourceFile);
 			File[] chunkFiles = new File[chunkSize];
@@ -68,23 +68,17 @@ public class PeerCommonUtil {
 		}
 	}
 
-}
-
-       class GlobalHelperFunc 
-  {
-
-
 	public static byte[] ByteCopyArr(byte[] original, int from, int curr)
 	{
 		int modlength = curr - from; 
 		if (modlength<0) 
-		throw new IllegalArgumentException(from + " > " + curr); 
+			throw new IllegalArgumentException(from + " > " + curr); 
 		byte [] new_copy = new byte[modlength]; 
 		System.arraycopy(original,from,new_copy, 0, Math.min(original.length - from, modlength)); 
 		return new_copy; 
 	}
 
-	
+
 	public static boolean missingFileChunk(int[] PeerBit, int[] ConnectedBit, int size) 
 	{
 		for(int i=0;i< size;i++)
@@ -97,7 +91,7 @@ public class PeerCommonUtil {
 		return true;
 	}
 
-	
+
 	public static int randomFileChunk(int[] PeerBit, int[] ConnectedBit, int size)
 	{
 		List<Integer> chunklist = new ArrayList<>(); 
@@ -105,29 +99,29 @@ public class PeerCommonUtil {
 		{
 			if(PeerBit[j] == 0 && ConnectedBit[j] ==1)
 			{
-              chunklist.add(j);
+				chunklist.add(j);
 			}
 		}
 
 		int chunksize = chunklist.size(); 
-	   if(chunksize > 0) 
-	   {
-		   int res;
-		   Random r = new Random(); 
-		   int r_index = Math.abs(r.nextInt() % chunksize); 
-		   return res = chunklist.get(r_index);                      //Doublecheck
-	   }
-	   else 
-	   {
-		   return -1; 
-	   }
+		if(chunksize > 0) 
+		{
+			int res;
+			Random r = new Random(); 
+			int r_index = Math.abs(r.nextInt() % chunksize); 
+			return res = chunklist.get(r_index);                      //Doublecheck
+		}
+		else 
+		{
+			return -1; 
+		}
 	}
 
-	
+
 	public static byte[] PacketHandshake(int currIdNode) 
-	
+
 	{
-		
+
 		String hsHeader = PeerConstants.getHeaderHandshake(); 
 		byte[] hspacket = new byte[32];
 		byte[] headerbyte = new String(hsHeader).getBytes(); 
@@ -135,13 +129,13 @@ public class PeerCommonUtil {
 		{
 			hspacket[i] = headerbyte[i]; 
 		}
-		
+
 		byte[] peerIdbyte = ByteBuffer.allocate(4).putInt(currIdNode).array(); 
 		for(int i=0;i<peerIdbyte.length; i++)
 		{
 			hspacket[i] = peerIdbyte[i]; 
 		}
-		
+
 		int a = PeerConstants.getZeroBits(); 
 		String zer = Integer.toString(a); 
 		byte[] zerByte = new String(zer).getBytes(); 
@@ -152,6 +146,5 @@ public class PeerCommonUtil {
 
 		return hspacket; 
 
-    }
-
-   }
+	}
+}
