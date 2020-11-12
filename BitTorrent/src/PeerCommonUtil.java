@@ -11,7 +11,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.*; 
 
 //Write all the common helper functions here
 public class PeerCommonUtil {
@@ -55,7 +54,7 @@ public class PeerCommonUtil {
 				fis.read(copy);
 				fos.write(copy);
 				fos.close();
-				System.out.println(chunkLength);
+			//	System.out.println(chunkLength);
 				i++;
 			}
 			fis.close();

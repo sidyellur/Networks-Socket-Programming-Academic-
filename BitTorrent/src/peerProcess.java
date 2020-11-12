@@ -93,7 +93,7 @@ public class peerProcess {
                     inputStream.readFully(handshakePacket);
                   //  ByteBuffer handshakeBB = ByteBuffer.wrap(handshakePacket);
                     int peerId = Integer.parseInt(new String(handshakePacket));
-                   // System.out.println("Server"+peerId);
+                    System.out.println(peerId);
                     
                     //send Handshake
                     byte[] sendHandshake = String.valueOf(sourcePeerId).getBytes();
