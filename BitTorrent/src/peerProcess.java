@@ -149,7 +149,7 @@ public class peerProcess {
 		//make peer directory
 		PeerCommonUtil.makePeerDirectory(sourcePeerId);
 		
-		//current peer has file
+		//current peer has file, set bitfield as true for all bits and split the file into chunks
 		if(currentPeer.getHaveFile() == 1) {
 			peersWithEntireFile++;
 			currentPeer.setNoOfChunks(totalChunks);

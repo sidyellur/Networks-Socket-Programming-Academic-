@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -126,7 +127,7 @@ public class PeerCommonUtil {
 		byte[] peerIdBytes = String.valueOf(sourcePeerId).getBytes();
 		int packetLen = headerBytes.length+zeroBytes.length+peerIdBytes.length;
 		byte[] hspacket = new byte[packetLen];
-		for(int i = 0 ;i<32;i++) {
+		for(int i = 0 ;i<packetLen;i++) {
 			if(i < headerBytes.length) {
 				hspacket[i] = headerBytes[i];
 			}
