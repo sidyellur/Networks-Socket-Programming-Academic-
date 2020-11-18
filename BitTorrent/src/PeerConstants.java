@@ -30,29 +30,6 @@ public class PeerConstants {
 			return null;
 		}
 	}
-	public static String getPeerFileName()
-	{
-          return PEER_FILE;
-	}
-
-	public static String getZeroBits() 
-	{
-		return ZERO_BITS_HANDSHAKE; 
-	}
-
-	public static String getConfigFileName()
-	{
-		return CONFIG_FILE; 
-	}
-
-	public static String getTorrentFileName()
-	{
-		return DOWNLOAD_FILE;
-	}
-
-	public static String getHeaderHandshake()
-	{
-		return HANDSHAKE_HEADER;
-	}
+	
 }
 

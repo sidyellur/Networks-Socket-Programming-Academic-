@@ -120,9 +120,9 @@ public class PeerCommonUtil {
 
 	public static byte[] getHandshakePacket(int sourcePeerId) 
 	{
-		String hsHeader = PeerConstants.getHeaderHandshake();
+		String hsHeader = PeerConstants.HANDSHAKE_HEADER;
 		byte[] headerBytes = hsHeader.getBytes();
-		String zeroes = PeerConstants.getZeroBits();
+		String zeroes = PeerConstants.ZERO_BITS_HANDSHAKE;
 		byte[] zeroBytes = zeroes.getBytes();
 		byte[] peerIdBytes = String.valueOf(sourcePeerId).getBytes();
 		int packetLen = headerBytes.length+zeroBytes.length+peerIdBytes.length;
