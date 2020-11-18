@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,18 +48,17 @@ public class peerProcess {
 					DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
 					//Send handshake
-					byte[] handShakeHeader = String.valueOf(sourcePeerId).getBytes();
+					byte[] handShakeHeader = PeerCommonUtil.getHandshakePacket(sourcePeerId);
 					outputStream.write(handShakeHeader);
 					
 					//Receive handshake
-					byte[] repliedHandshake = new byte[handShakeHeader.length];
-					inputStream.readFully(repliedHandshake);
-					//ByteBuffer repliedHandshakeBB = ByteBuffer.wrap(repliedHandshake);
-					int serverPeerId = Integer.parseInt(new String(repliedHandshake));
+					byte[] receivedHandshake = new byte[handShakeHeader.length];
+					inputStream.readFully(receivedHandshake);
+					int receivedPeerId = Integer.parseInt(new String(Arrays.copyOfRange(receivedHandshake,28,32)));
 					
 					//Add the socket to connection established 
-					if(serverPeerId == peerId) {
-						System.out.println(serverPeerId);
+					if(receivedPeerId == peerId) {
+						System.out.println(receivedPeerId);
 						connectionsEstablished.put(peerId, socket);
 					}		
 					index++;
@@ -89,14 +89,13 @@ public class peerProcess {
 					DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 					
 					//Receive handshake
-                    byte[] handshakePacket = new byte[String.valueOf(sourcePeerId).getBytes().length];
+                    byte[] handshakePacket = new byte[32];
                     inputStream.readFully(handshakePacket);
-                  //  ByteBuffer handshakeBB = ByteBuffer.wrap(handshakePacket);
-                    int peerId = Integer.parseInt(new String(handshakePacket));
+                    int peerId = Integer.parseInt(new String(Arrays.copyOfRange(handshakePacket,28,32)));
                     System.out.println(peerId);
                     
                     //send Handshake
-                    byte[] sendHandshake = String.valueOf(sourcePeerId).getBytes();
+                    byte[] sendHandshake = PeerCommonUtil.getHandshakePacket(sourcePeerId);
                     outputStream.write(sendHandshake);
                     
                     connectionsEstablished.put(peerId, socket);

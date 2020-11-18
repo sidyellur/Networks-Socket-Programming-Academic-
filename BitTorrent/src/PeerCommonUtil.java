@@ -117,32 +117,27 @@ public class PeerCommonUtil {
 	}
 
 
-	public static byte[] PacketHandshake(int currIdNode) 
-
+	public static byte[] getHandshakePacket(int sourcePeerId) 
 	{
-
-		String hsHeader = PeerConstants.getHeaderHandshake(); 
-		byte[] hspacket = new byte[32];
-		byte[] headerbyte = new String(hsHeader).getBytes(); 
-		for(int i=0;i<headerbyte.length;i++)
-		{
-			hspacket[i] = headerbyte[i]; 
+		String hsHeader = PeerConstants.getHeaderHandshake();
+		byte[] headerBytes = hsHeader.getBytes();
+		String zeroes = PeerConstants.getZeroBits();
+		byte[] zeroBytes = zeroes.getBytes();
+		byte[] peerIdBytes = String.valueOf(sourcePeerId).getBytes();
+		int packetLen = headerBytes.length+zeroBytes.length+peerIdBytes.length;
+		byte[] hspacket = new byte[packetLen];
+		for(int i = 0 ;i<32;i++) {
+			if(i < headerBytes.length) {
+				hspacket[i] = headerBytes[i];
+			}
+			else if(i < headerBytes.length + zeroBytes.length){
+				hspacket[i] = zeroBytes[i-headerBytes.length];
+			}
+			else {
+				hspacket[i] = peerIdBytes[i - headerBytes.length - zeroBytes.length];
+			}
 		}
-
-		byte[] peerIdbyte = ByteBuffer.allocate(4).putInt(currIdNode).array(); 
-		for(int i=0;i<peerIdbyte.length; i++)
-		{
-			hspacket[i] = peerIdbyte[i]; 
-		}
-
-		int a = PeerConstants.getZeroBits(); 
-		String zer = Integer.toString(a); 
-		byte[] zerByte = new String(zer).getBytes(); 
-		for(int i=0;i<zerByte.length; i++)
-		{
-			hspacket[i] = zerByte[i]; 
-		}
-
+	
 		return hspacket; 
 
 	}

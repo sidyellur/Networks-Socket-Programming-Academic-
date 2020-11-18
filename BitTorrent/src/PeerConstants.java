@@ -5,7 +5,7 @@ public class PeerConstants {
 	public static final String PEER_FILE = "PeerInfo.cfg";
 	public static final String DOWNLOAD_FILE = "TheFile.dat";
 	public static final String HANDSHAKE_HEADER = "P2PFILESHARINGPROJ";
-	public static final int ZERO_BITS_HANDSHAKE = 10;
+	public static final String ZERO_BITS_HANDSHAKE = "0000000000";
 	
 	public static enum messageType{
 		CHOKE(0),UNCHOKE(1),INTERESTED(2),NOT_INTERESTED(3),HAVE(4),BITFIELD(5),REQUEST(6),PIECE(7);
@@ -35,7 +35,7 @@ public class PeerConstants {
           return PEER_FILE;
 	}
 
-	public static int getZeroBits() 
+	public static String getZeroBits() 
 	{
 		return ZERO_BITS_HANDSHAKE; 
 	}
