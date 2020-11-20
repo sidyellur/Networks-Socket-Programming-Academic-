@@ -30,6 +30,8 @@ public class peerProcess {
 	class NeighborPeerInteraction implements Runnable{
 		Socket socket = null;
 		PeerNode peerNode = null;
+		DataInputStream inputStream = null;
+		DataOutputStream outputStream = null;
 		
 		public NeighborPeerInteraction(Socket socket, PeerNode peerNode) {
 			this.socket = socket;
@@ -89,7 +91,7 @@ public class peerProcess {
 						System.out.println(receivedPeerId);
 						connectionsEstablished.put(peerId, socket);
 						NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
-						Thread neighborPeerThread = new Thread(npi);
+						Thread neighborPeerThread = new Thread(npi,"Thread_"+peerId);
 						neighborPeerThread.start();
 					}		
 					index++;
@@ -134,7 +136,8 @@ public class peerProcess {
                     connectionsEstablished.put(peerId, socket);
                     PeerNode peerObj = allPeersLHMap.get(peerId);
                     NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
-					Thread neighborPeerThread = new Thread(npi);
+					Thread neighborPeerThread = new Thread(npi,"Thread_"+peerId);
+					
 					neighborPeerThread.start();
 					index++;
 
