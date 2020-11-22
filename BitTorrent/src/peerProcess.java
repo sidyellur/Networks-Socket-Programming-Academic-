@@ -17,19 +17,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class peerProcess {
 	private static ReadFiles rfObj = null;
 	private static ConfigFile configFileObj = null;
-	private static Map<Integer,NeighbourPeerNode> neighborPeers = null;
+	private static Map<Integer,NeighbourPeerNode> neighborPeers = new LinkedHashMap<>();
 	private static int sourcePeerId = -1;
-	private static ConcurrentHashMap<Integer,Socket> connectionsEstablished = new ConcurrentHashMap<>();
-	private static ConcurrentHashMap<Integer,Integer> bitfield = new ConcurrentHashMap<Integer,Integer>();
+	private static ConcurrentHashMap<Integer,Integer> bitfield = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<Integer,NeighborPeerInteraction> neighborPeerConnections = new ConcurrentHashMap<>();
 	private static int currentPeerIndex = -1;
 	private static int totalPeers = -1;
 	private static ServerSocket listener = null;
 	private static int peersWithEntireFile = 0;
 	private static int totalChunks = 0;
-	private static int portNumber = 0;
+	private static int sourcePortNumber = 0;
 	private static boolean complete_file;
 
-	class NeighborPeerInteraction implements Runnable{
+	class NeighborPeerInteraction {
 		Socket socket = null;
 		NeighbourPeerNode peerNode = null;
 		DataInputStream inputStream = null;
@@ -38,11 +38,17 @@ public class peerProcess {
 		public NeighborPeerInteraction(Socket socket, NeighbourPeerNode peerNode) {
 			this.socket = socket;
 			this.peerNode = peerNode;
+			NeighborPeerInteractionThread nbit = new NeighborPeerInteractionThread();
+			Thread neighborPeerThread = new Thread(nbit,"Thread_"+peerNode.getPeerId());
+			neighborPeerThread.start();
 		}
 		
-		public void run() {
-			
+		class NeighborPeerInteractionThread implements Runnable{
+			public void run() {
+				//System.out.println(Thread.currentThread().getName());
+			}
 		}
+		
 	}
 	
 	class Choke implements Runnable{
@@ -90,11 +96,9 @@ public class peerProcess {
 					
 					//Add the socket to connection established 
 					if(receivedPeerId == peerId) {		
-						System.out.println(receivedPeerId);
-						connectionsEstablished.put(peerId, socket);
+						//System.out.println(receivedPeerId);
 						NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
-						Thread neighborPeerThread = new Thread(npi,"Thread_"+peerId);
-						neighborPeerThread.start();
+						neighborPeerConnections.put(peerId, npi);
 					}		
 					index++;
 					outputStream.flush();
@@ -118,7 +122,7 @@ public class peerProcess {
 		public void run() {
 			int index = currentPeerIndex;
 			try {
-				listener = new ServerSocket(portNumber);
+				listener = new ServerSocket(sourcePortNumber);
 				while(index < totalPeers-1) {
 					Socket socket = listener.accept();
 					DataInputStream inputStream = new DataInputStream(socket.getInputStream());
@@ -134,12 +138,9 @@ public class peerProcess {
                     byte[] sendHandshake = PeerCommonUtil.getHandshakePacket(sourcePeerId);
                     outputStream.write(sendHandshake);
                     
-                    connectionsEstablished.put(peerId, socket);
                     NeighbourPeerNode peerObj = neighborPeers.get(peerId);
                     NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
-					Thread neighborPeerThread = new Thread(npi,"Thread_"+peerId);
-					
-					neighborPeerThread.start();
+                    neighborPeerConnections.put(peerId, npi);
 					index++;
 
 				}
@@ -156,14 +157,13 @@ public class peerProcess {
 
 	//set adjacent peer nodes and add to peerMap
 	private static void setPeerNodes(List<String> peerRows)throws Exception{
-		neighborPeers = new LinkedHashMap<>();
 		totalPeers = 0;
 
 		for(String row:peerRows) {
 			int peerId = Integer.parseInt(row.split(" ")[0]);
 			if(peerId == sourcePeerId) {
 				currentPeerIndex = totalPeers;
-				portNumber = Integer.parseInt(row.split(" ")[2]);
+				sourcePortNumber = Integer.parseInt(row.split(" ")[2]);
 				complete_file = Integer.parseInt(row.split(" ")[3]) == 1?true:false;
 				
 			}
