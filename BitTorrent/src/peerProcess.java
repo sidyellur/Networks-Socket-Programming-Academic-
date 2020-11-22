@@ -34,45 +34,47 @@ public class peerProcess {
 		NeighbourPeerNode peerNode = null;
 		DataInputStream inputStream = null;
 		DataOutputStream outputStream = null;
-		
-		public NeighborPeerInteraction(Socket socket, NeighbourPeerNode peerNode) {
+
+		public NeighborPeerInteraction(Socket socket, NeighbourPeerNode peerNode) throws IOException {
 			this.socket = socket;
 			this.peerNode = peerNode;
+			inputStream = new DataInputStream(socket.getInputStream());
+			outputStream = new DataOutputStream(socket.getOutputStream());		
 			NeighborPeerInteractionThread nbit = new NeighborPeerInteractionThread();
 			Thread neighborPeerThread = new Thread(nbit,"Thread_"+peerNode.getPeerId());
 			neighborPeerThread.start();
 		}
-		
+
 		class NeighborPeerInteractionThread implements Runnable{
 			public void run() {
 				//System.out.println(Thread.currentThread().getName());
 			}
 		}
-		
+
 	}
-	
+
 	class Choke implements Runnable{
-		
+
 		public void run() {
-			
+
 		}
 	}
-	
+
 	class OptimisticUnChoke implements Runnable{
-		
+
 		public void run() {
-			
+
 		}
 	}
-	
+
 	//Establishes TCP Connections with all the peers who started before the current peer by exchanging handshake packets with them
-	  class Client implements Runnable{
-		
+	class Client implements Runnable{
+
 		@Override
 		public void run() {
 			int index = 0;
 			Iterator<Entry<Integer, NeighbourPeerNode>> itr = neighborPeers.entrySet().iterator();
-			
+
 			while(index < currentPeerIndex) {
 				Entry<Integer, NeighbourPeerNode> entry = itr.next();
 				int peerId = entry.getKey();
@@ -88,12 +90,12 @@ public class peerProcess {
 					//Send handshake
 					byte[] handShakeHeader = PeerCommonUtil.getHandshakePacket(sourcePeerId);
 					outputStream.write(handShakeHeader);
-					
+
 					//Receive handshake
 					byte[] receivedHandshake = new byte[handShakeHeader.length];
 					inputStream.readFully(receivedHandshake);
 					int receivedPeerId = Integer.parseInt(new String(Arrays.copyOfRange(receivedHandshake,28,32)));
-					
+
 					//Add the socket to connection established 
 					if(receivedPeerId == peerId) {		
 						//System.out.println(receivedPeerId);
@@ -102,7 +104,7 @@ public class peerProcess {
 					}		
 					index++;
 					outputStream.flush();
-					
+
 				}
 				catch(UnknownHostException uhe) {
 					uhe.printStackTrace();
@@ -127,20 +129,20 @@ public class peerProcess {
 					Socket socket = listener.accept();
 					DataInputStream inputStream = new DataInputStream(socket.getInputStream());
 					DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
-					
+
 					//Receive handshake
-                    byte[] handshakePacket = new byte[32];
-                    inputStream.readFully(handshakePacket);
-                    int peerId = Integer.parseInt(new String(Arrays.copyOfRange(handshakePacket,28,32)));
-                   // System.out.println(peerId);
-                    
-                    //send Handshake
-                    byte[] sendHandshake = PeerCommonUtil.getHandshakePacket(sourcePeerId);
-                    outputStream.write(sendHandshake);
-                    
-                    NeighbourPeerNode peerObj = neighborPeers.get(peerId);
-                    NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
-                    neighborPeerConnections.put(peerId, npi);
+					byte[] handshakePacket = new byte[32];
+					inputStream.readFully(handshakePacket);
+					int peerId = Integer.parseInt(new String(Arrays.copyOfRange(handshakePacket,28,32)));
+					// System.out.println(peerId);
+
+					//send Handshake
+					byte[] sendHandshake = PeerCommonUtil.getHandshakePacket(sourcePeerId);
+					outputStream.write(sendHandshake);
+
+					NeighbourPeerNode peerObj = neighborPeers.get(peerId);
+					NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
+					neighborPeerConnections.put(peerId, npi);
 					index++;
 
 				}
@@ -165,7 +167,7 @@ public class peerProcess {
 				currentPeerIndex = totalPeers;
 				sourcePortNumber = Integer.parseInt(row.split(" ")[2]);
 				complete_file = Integer.parseInt(row.split(" ")[3]) == 1?true:false;
-				
+
 			}
 			else {
 				NeighbourPeerNode pnObj = NeighbourPeerNode.getPeerNodeObject(row);	
@@ -189,10 +191,10 @@ public class peerProcess {
 		//Read PeerInfo.cfg and set the PeerNode.java 
 		List<String> peerRows = rfObj.parseTheFile("PeerInfo.cfg");
 		setPeerNodes(peerRows);
-		
+
 		//make peer directory
 		PeerCommonUtil.makePeerDirectory(sourcePeerId);
-		
+
 		//current peer has file, set bitfield as true for all bits and split the file into chunks
 		int bit = 0;
 		if(complete_file) {
@@ -200,22 +202,22 @@ public class peerProcess {
 			bit = 1;
 			PeerCommonUtil.splitFileintoChunks(""+sourcePeerId, configFileObj);
 		}
-		
+
 		for(int i = 0;i<totalChunks;i++) {
 			bitfield.put(i, bit);
 		}
-		
+
 		peerProcess p1 = new peerProcess();
 		//start the client and server threads to initialize the TCP Connections with all the other peers
 		Client clientObj = p1.new Client();
 		Thread client = new Thread(clientObj,"Client Thread");
 		client.start();
-		
+
 		Server serverObj = p1.new Server();
 		Thread server = new Thread(serverObj,"Server Thread");
 		server.start();
 		//end
-				
+
 	}
 
 }
