@@ -1,29 +1,29 @@
+import java.util.BitSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class PeerNode {
+public class NeighbourPeerNode {
 	private int peerId = -1;
 	private String hostName = "";
 	private int portNumber = -1;
 	private int haveFile = 0;
-	private ConcurrentHashMap<Integer,Integer> bitfield = new ConcurrentHashMap<Integer,Integer>();
-	private int noOfChunks = 0;
+	private BitSet bitField = new BitSet();
 	
-	private PeerNode() {}
+	private NeighbourPeerNode() {}
 	
-	private PeerNode(int peerId, String hostName, int portNumber, int haveFile) {
+	private NeighbourPeerNode(int peerId, String hostName, int portNumber, int haveFile) {
 		this.setPeerId(peerId);
 		this.setHostName(hostName);
 		this.setPortNumber(portNumber);
 		this.setHaveFile(haveFile);
 	}
 	
-	public static PeerNode getPeerNodeObject(String row) {		
+	public static NeighbourPeerNode getPeerNodeObject(String row) {		
 		String[] parameters = row.split(" ");
 		int peerId = Integer.parseInt(parameters[0]);
 		String hostName = parameters[1];
 		int portNumber = Integer.parseInt(parameters[2]);
 		int haveFile = Integer.parseInt(parameters[3]);
-		PeerNode pn = new PeerNode(peerId,hostName,portNumber,haveFile);
+		NeighbourPeerNode pn = new NeighbourPeerNode(peerId,hostName,portNumber,haveFile);
 		return pn;
 	}
 	
@@ -59,31 +59,12 @@ public class PeerNode {
 		this.haveFile = haveFile;
 	}
 	
-	public ConcurrentHashMap<Integer, Integer> getBitfield() {
-		return bitfield;
+	public BitSet getBitfield() {
+		return bitField;
 	}
 
-	public void setBitfield(ConcurrentHashMap<Integer, Integer> bitfield) {
-		this.bitfield = bitfield;
-	}
-	
-	public void updateBitfield(boolean haveFile) {
-		int bit = haveFile?1:0;
-		for(int i=0;i<noOfChunks;i++) {
-			bitfield.put(i, bit);
-		}
-	}
-	
-	public void updateBitfield(int indexOfChunkReceived) {
-		bitfield.put(indexOfChunkReceived, 1);
-	}
-	
-	public int getNoOfChunks() {
-		return noOfChunks;
-	}
-	
-	public void setNoOfChunks(int noOfChunks) {
-		this.noOfChunks = noOfChunks;
+	public void setBitfield(BitSet bitfield) {
+		this.bitField = bitfield;
 	}
 
 }

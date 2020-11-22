@@ -17,23 +17,25 @@ import java.util.concurrent.ConcurrentHashMap;
 public class peerProcess {
 	private static ReadFiles rfObj = null;
 	private static ConfigFile configFileObj = null;
-	private static Map<Integer,PeerNode> allPeersLHMap = null;
+	private static Map<Integer,NeighbourPeerNode> neighborPeers = null;
 	private static int sourcePeerId = -1;
-	private static PeerNode currentPeer = null;
 	private static ConcurrentHashMap<Integer,Socket> connectionsEstablished = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<Integer,Integer> bitfield = new ConcurrentHashMap<Integer,Integer>();
 	private static int currentPeerIndex = -1;
 	private static int totalPeers = -1;
 	private static ServerSocket listener = null;
 	private static int peersWithEntireFile = 0;
 	private static int totalChunks = 0;
+	private static int portNumber = 0;
+	private static boolean complete_file;
 
 	class NeighborPeerInteraction implements Runnable{
 		Socket socket = null;
-		PeerNode peerNode = null;
+		NeighbourPeerNode peerNode = null;
 		DataInputStream inputStream = null;
 		DataOutputStream outputStream = null;
 		
-		public NeighborPeerInteraction(Socket socket, PeerNode peerNode) {
+		public NeighborPeerInteraction(Socket socket, NeighbourPeerNode peerNode) {
 			this.socket = socket;
 			this.peerNode = peerNode;
 		}
@@ -63,12 +65,12 @@ public class peerProcess {
 		@Override
 		public void run() {
 			int index = 0;
-			Iterator<Entry<Integer, PeerNode>> itr = allPeersLHMap.entrySet().iterator();
+			Iterator<Entry<Integer, NeighbourPeerNode>> itr = neighborPeers.entrySet().iterator();
 			
 			while(index < currentPeerIndex) {
-				Entry<Integer, PeerNode> entry = itr.next();
+				Entry<Integer, NeighbourPeerNode> entry = itr.next();
 				int peerId = entry.getKey();
-				PeerNode peerObj = entry.getValue();
+				NeighbourPeerNode peerObj = entry.getValue();
 				String hostName = peerObj.getHostName();
 				int portNumber = peerObj.getPortNumber();
 				try {	
@@ -115,9 +117,8 @@ public class peerProcess {
 		@Override
 		public void run() {
 			int index = currentPeerIndex;
-			int sourcePortNumber = currentPeer.getPortNumber();
 			try {
-				listener = new ServerSocket(sourcePortNumber);
+				listener = new ServerSocket(portNumber);
 				while(index < totalPeers-1) {
 					Socket socket = listener.accept();
 					DataInputStream inputStream = new DataInputStream(socket.getInputStream());
@@ -134,7 +135,7 @@ public class peerProcess {
                     outputStream.write(sendHandshake);
                     
                     connectionsEstablished.put(peerId, socket);
-                    PeerNode peerObj = allPeersLHMap.get(peerId);
+                    NeighbourPeerNode peerObj = neighborPeers.get(peerId);
                     NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
 					Thread neighborPeerThread = new Thread(npi,"Thread_"+peerId);
 					
@@ -153,19 +154,23 @@ public class peerProcess {
 		}
 	}
 
-	//set peer nodes and add to peerMap
+	//set adjacent peer nodes and add to peerMap
 	private static void setPeerNodes(List<String> peerRows)throws Exception{
-		allPeersLHMap = new LinkedHashMap<>();
+		neighborPeers = new LinkedHashMap<>();
 		totalPeers = 0;
 
 		for(String row:peerRows) {
-			PeerNode pnObj = PeerNode.getPeerNodeObject(row);
-			int peerId = pnObj.getPeerId();
+			int peerId = Integer.parseInt(row.split(" ")[0]);
 			if(peerId == sourcePeerId) {
 				currentPeerIndex = totalPeers;
+				portNumber = Integer.parseInt(row.split(" ")[2]);
+				complete_file = Integer.parseInt(row.split(" ")[3]) == 1?true:false;
+				
 			}
-			//	System.out.println(peerId);		
-			allPeersLHMap.put(peerId,pnObj);
+			else {
+				NeighbourPeerNode pnObj = NeighbourPeerNode.getPeerNodeObject(row);	
+				neighborPeers.put(peerId,pnObj);
+			}
 			totalPeers++;
 		}
 
@@ -184,20 +189,20 @@ public class peerProcess {
 		//Read PeerInfo.cfg and set the PeerNode.java 
 		List<String> peerRows = rfObj.parseTheFile("PeerInfo.cfg");
 		setPeerNodes(peerRows);
-		currentPeer = allPeersLHMap.get(sourcePeerId);
 		
 		//make peer directory
 		PeerCommonUtil.makePeerDirectory(sourcePeerId);
 		
 		//current peer has file, set bitfield as true for all bits and split the file into chunks
-		if(currentPeer.getHaveFile() == 1) {
+		int bit = 0;
+		if(complete_file) {
 			peersWithEntireFile++;
-			currentPeer.setNoOfChunks(totalChunks);
-			currentPeer.updateBitfield(true);
+			bit = 1;
 			PeerCommonUtil.splitFileintoChunks(""+sourcePeerId, configFileObj);
 		}
-		else {
-			currentPeer.updateBitfield(false);
+		
+		for(int i = 0;i<totalChunks;i++) {
+			bitfield.put(i, bit);
 		}
 		
 		peerProcess p1 = new peerProcess();
