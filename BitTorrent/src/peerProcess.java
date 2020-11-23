@@ -42,7 +42,7 @@ public class peerProcess {
 		public NeighborPeerInteraction(Socket socket, NeighbourPeerNode peerNode) throws IOException {
 			this.socket = socket;
 			this.peerNode = peerNode;
-			msg = new byte[configFileObj.getChunkSize() + 10];
+			msg = new byte[5];
 			inputStream = new DataInputStream(socket.getInputStream());
 			outputStream = new DataOutputStream(socket.getOutputStream());		
 			NeighborPeerInteractionThread nbit = new NeighborPeerInteractionThread();
@@ -50,8 +50,8 @@ public class peerProcess {
 			neighborPeerThread.start();
 		}
 
-		//convert message into bytes that can be sent
-		public synchronized byte[] getMessageInBytes(int type,byte[] payload) {
+		//convert message into bytes that can be sent to other peers
+		public synchronized byte[] getMessage(int type,byte[] payload) {
 			//message length byte array 
 			int payLoadSize = payload != null?payload.length:0;
 			int totalLen = 1 + payLoadSize;	
@@ -111,7 +111,7 @@ public class peerProcess {
 				Arrays.fill(bitfield, 0);
 			}
 			byte[] payload = intArrayTobyteArray(bitfield);
-			byte[] message = getMessageInBytes(PeerConstants.messageType.BITFIELD.getValue(),payload);
+			byte[] message = getMessage(PeerConstants.messageType.BITFIELD.getValue(),payload);
 			try {
 				outputStream.write(message);
 				outputStream.flush();
@@ -131,18 +131,20 @@ public class peerProcess {
 				boolean flag = true;
 				while(flag) {
 					try {
-
+						//Read first 4 bytes of the message which is size of the payload
 						for(int i = 0;i<4;i++) {
 							inputStream.read(msg, i, 1);
 						}		
 
 						int size = ByteBuffer.wrap(msg).getInt();
-						System.out.println("size of message = "+size);
+						//System.out.println("size of message = "+size);
 
+						//Read next 1 byte which is the type of message
 						inputStream.read(msg,0,1);
 						int type = msg[0];
 						System.out.println("type of message = " + type);
 
+						//Bitfield
 						if(type == PeerConstants.messageType.BITFIELD.getValue()) {
 							byte[] bytes = new byte[size-1];
 							for(int i = 0;i<size-1;i++) {
@@ -150,11 +152,9 @@ public class peerProcess {
 							}
 							int[] peer_bitfield = byteArrayTointArray(bytes);
 							peerNode.setBitfield(peer_bitfield);
-							System.out.println("total bits "+totalChunks);
-							System.out.println("Received bits"+peer_bitfield.length);
-							for(int i = 0;i<peer_bitfield.length;i++) {
-							//	System.out.println(peer_bitfield[i]);
-							}
+							//System.out.println("total bits "+totalChunks);
+							//System.out.println("Received bits"+peer_bitfield.length);
+
 						}
 						flag = false;	
 					}catch(IOException e) {
