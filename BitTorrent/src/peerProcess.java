@@ -152,8 +152,20 @@ public class peerProcess {
 							}
 							int[] peer_bitfield = byteArrayTointArray(bytes);
 							peerNode.setBitfield(peer_bitfield);
-							//System.out.println("total bits "+totalChunks);
-							//System.out.println("Received bits "+peer_bitfield.length);
+							//if peer has full file, then increase peersWithEntireFile
+							boolean hasFullFile = true;
+							for(int i=0;i<peer_bitfield.length;i++) {
+								if(peer_bitfield[i] == 0) {
+									hasFullFile = false;
+									break;
+								}
+							}
+							if(hasFullFile) {
+								peerNode.setHaveFile(1);
+								peersWithEntireFile++;
+								//send interested as peer has pieces that I don't have
+								
+							}
 							
 						}
 						flag = false;	
