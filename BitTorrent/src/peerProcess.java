@@ -144,7 +144,7 @@ public class peerProcess {
 						int type = msg[0];
 						System.out.println("type of message = " + type);
 
-						//Bitfield
+						//if type = Bitfield
 						if(type == PeerConstants.messageType.BITFIELD.getValue()) {
 							byte[] bytes = new byte[size-1];
 							for(int i = 0;i<size-1;i++) {
@@ -153,8 +153,8 @@ public class peerProcess {
 							int[] peer_bitfield = byteArrayTointArray(bytes);
 							peerNode.setBitfield(peer_bitfield);
 							//System.out.println("total bits "+totalChunks);
-							//System.out.println("Received bits"+peer_bitfield.length);
-
+							//System.out.println("Received bits "+peer_bitfield.length);
+							
 						}
 						flag = false;	
 					}catch(IOException e) {
