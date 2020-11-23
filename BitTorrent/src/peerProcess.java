@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -19,7 +20,8 @@ public class peerProcess {
 	private static ConfigFile configFileObj = null;
 	private static Map<Integer,NeighbourPeerNode> neighborPeers = new LinkedHashMap<>();
 	private static int sourcePeerId = -1;
-	private static ConcurrentHashMap<Integer,Integer> bitfield = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<Integer,Integer> bitfieldHM = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap < Integer, Integer > downloadRate = new ConcurrentHashMap<>();
 	private static ConcurrentHashMap<Integer,NeighborPeerInteraction> neighborPeerConnections = new ConcurrentHashMap<>();
 	private static int currentPeerIndex = -1;
 	private static int totalPeers = -1;
@@ -34,10 +36,13 @@ public class peerProcess {
 		NeighbourPeerNode peerNode = null;
 		DataInputStream inputStream = null;
 		DataOutputStream outputStream = null;
+		boolean unchoked = false;
+		byte[] msg = null;
 
 		public NeighborPeerInteraction(Socket socket, NeighbourPeerNode peerNode) throws IOException {
 			this.socket = socket;
 			this.peerNode = peerNode;
+			msg = new byte[configFileObj.getChunkSize() + 10];
 			inputStream = new DataInputStream(socket.getInputStream());
 			outputStream = new DataOutputStream(socket.getOutputStream());		
 			NeighborPeerInteractionThread nbit = new NeighborPeerInteractionThread();
@@ -45,9 +50,119 @@ public class peerProcess {
 			neighborPeerThread.start();
 		}
 
+		//convert message into bytes that can be sent
+		public synchronized byte[] getMessageInBytes(int type,byte[] payload) {
+			//message length byte array 
+			int payLoadSize = payload != null?payload.length:0;
+			int totalLen = 1 + payLoadSize;	
+			ByteBuffer bb = ByteBuffer.allocate(4); //allocate 4 bytes to byte buffer
+			byte[] messageLength = bb.putInt(totalLen).array();//write the integer value 'totalLen' as 4 bytes
+
+			//message type byte
+			byte messageType = (byte)(char)type;
+
+			//concatenate message length byte array, message type byte and payload byte array
+			byte[] message = new byte[messageLength.length + totalLen];
+			int index = 0;
+			for(int i = 0;i<messageLength.length;i++) {
+				message[index] = messageLength[i];
+				index++;
+			}
+			message[index] = messageType;
+			index++;
+			if(payload != null) {
+				for(int i=0;i<payload.length;i++) {
+					message[index] = payload[i];
+					index++;
+				}
+			}
+			return message;
+		}
+
+		//convert from int array to byte array
+		public synchronized byte[] intArrayTobyteArray(int[] data) {
+			ByteBuffer byteBuffer = ByteBuffer.allocate(data.length * 4);        
+			IntBuffer intBuffer = byteBuffer.asIntBuffer();
+			intBuffer.put(data);
+			byte[] byteArray = byteBuffer.array();
+			return byteArray;
+		}
+
+		//convert byte array to int array
+		public synchronized int[] byteArrayTointArray(byte[] bytes) {
+			int[] message = new int[bytes.length/4];
+			int index = 0;
+			for(int i=0;i<bytes.length;i = i + 4) {
+				byte[] eachbit = new byte[4];
+				System.arraycopy(bytes, i, eachbit, 0, 4);
+				message[index] = ByteBuffer.wrap(eachbit).getInt();
+				index++;    	
+			}
+			return message;
+		}
+
+		//send bitfield messages
+		public void sendBitField(){
+			int[] bitfield = new int[totalChunks];
+			if(complete_file) {
+				Arrays.fill(bitfield, 1);
+			}
+			else {
+				Arrays.fill(bitfield, 0);
+			}
+			byte[] payload = intArrayTobyteArray(bitfield);
+			byte[] message = getMessageInBytes(PeerConstants.messageType.BITFIELD.getValue(),payload);
+			try {
+				outputStream.write(message);
+				outputStream.flush();
+			}
+			catch(IOException ie) {
+				ie.printStackTrace();
+			}			
+		}
+
 		class NeighborPeerInteractionThread implements Runnable{
-			public void run() {
-				//System.out.println(Thread.currentThread().getName());
+
+			public void run() {		
+				int peerId = peerNode.getPeerId();
+				System.out.println(peerId);
+				downloadRate.put(peerId, 0);
+				sendBitField();
+				boolean flag = true;
+				while(flag) {
+					try {
+
+						for(int i = 0;i<4;i++) {
+							inputStream.read(msg, i, 1);
+						}		
+
+						int size = ByteBuffer.wrap(msg).getInt();
+						System.out.println("size of message = "+size);
+
+						inputStream.read(msg,0,1);
+						int type = msg[0];
+						System.out.println("type of message = " + type);
+
+						if(type == PeerConstants.messageType.BITFIELD.getValue()) {
+							byte[] bytes = new byte[size-1];
+							for(int i = 0;i<size-1;i++) {
+								inputStream.read(bytes, i, 1);
+							}
+							int[] peer_bitfield = byteArrayTointArray(bytes);
+							peerNode.setBitfield(peer_bitfield);
+							System.out.println("total bits "+totalChunks);
+							System.out.println("Received bits"+peer_bitfield.length);
+							for(int i = 0;i<peer_bitfield.length;i++) {
+							//	System.out.println(peer_bitfield[i]);
+							}
+						}
+						flag = false;	
+					}catch(IOException e) {
+						e.printStackTrace();
+					}
+
+				}
+
 			}
 		}
 
@@ -204,7 +319,7 @@ public class peerProcess {
 		}
 
 		for(int i = 0;i<totalChunks;i++) {
-			bitfield.put(i, bit);
+			bitfieldHM.put(i, bit);
 		}
 
 		peerProcess p1 = new peerProcess();

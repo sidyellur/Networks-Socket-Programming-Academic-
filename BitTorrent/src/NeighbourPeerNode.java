@@ -6,7 +6,7 @@ public class NeighbourPeerNode {
 	private String hostName = "";
 	private int portNumber = -1;
 	private int haveFile = 0;
-	private BitSet bitField = new BitSet();
+	private int[] bitField = null;
 	
 	private NeighbourPeerNode() {}
 	
@@ -59,11 +59,11 @@ public class NeighbourPeerNode {
 		this.haveFile = haveFile;
 	}
 	
-	public BitSet getBitfield() {
+	public int[] getBitfield() {
 		return bitField;
 	}
 
-	public void setBitfield(BitSet bitfield) {
+	public void setBitfield(int[] bitfield) {
 		this.bitField = bitfield;
 	}
 
