@@ -508,12 +508,22 @@ public class peerProcess {
 		Thread server = new Thread(serverObj,"Server Thread");
 		server.start();
 		//end
+		
+		ChokeUnChoke chokeObj = p1.new ChokeUnChoke();
+		Thread chokeThread = new Thread(chokeObj,"Choke thread");
+		chokeThread.start();
+		
+		OptimisticUnChoke optChokeObj = p1.new OptimisticUnChoke();
+		Thread optUnChokeThread = new Thread(optChokeObj,"Optimistic Choke thread");
+		optUnChokeThread.start();
 
-		//		while(flag) {
-		//			if(peersWithEntireFile == totalPeers) {
-		//				flag = false;
-		//			}
-		//		}
+				while(flag) {
+//					if(peersWithEntireFile == totalPeers) {
+//						flag = false;
+//					}
+					TimeUnit.MINUTES.sleep(1);
+					flag = false;
+				}
 
 	}
 
