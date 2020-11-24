@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class peerProcess {
 	private static ReadFiles rfObj = null;
@@ -34,7 +35,7 @@ public class peerProcess {
 	private static int peersWithEntireFile = 0;
 	private static int totalChunks = 0; 
 	private static int sourcePortNumber = 0;
-	private static int optimisticallyUnchokedPeer = -1;
+	private static AtomicInteger optimisticallyUnchokedPeer = new AtomicInteger(-1);
 	private static boolean complete_file;
 	private static boolean flag = true;
 
@@ -130,13 +131,16 @@ public class peerProcess {
 			}			
 		}
 
+//Don't send choke message if the peer is optimistically unchoked but remove it from unchoked_peers and set unchoked = false
 		public synchronized void sendChokeMsg() {
-			byte[] message = getMessage(PeerConstants.messageType.CHOKE.getValue(),null);
-			try {
-				outputStream.write(message);
-				outputStream.flush();
-			}catch(IOException e) {
-				e.printStackTrace();
+			if(optimisticallyUnchokedPeer.get() != peerId) {
+				byte[] message = getMessage(PeerConstants.messageType.CHOKE.getValue(),null);
+				try {
+					outputStream.write(message);
+					outputStream.flush();
+				}catch(IOException e) {
+					e.printStackTrace();
+				}
 			}
 			if(unchoked) {
 				unchoked = false;
@@ -144,7 +148,7 @@ public class peerProcess {
 				if(index != -1) {
 					unchoked_peers.remove(index);
 				}	
-			}					
+			}
 		}
 
 		public synchronized void sendUnChokeMsg(boolean isOptimistically) {
@@ -236,7 +240,12 @@ public class peerProcess {
 							interested_peers.addIfAbsent(peerId);
 						}
 						else if(type == PeerConstants.messageType.NOT_INTERESTED.getValue()) {
-
+							int index = interested_peers.indexOf(peerId);
+							interested_peers.remove(index);
+							if(peerId == optimisticallyUnchokedPeer.get()) {
+								optimisticallyUnchokedPeer.set(-1);
+							}
+							sendChokeMsg();
 						}
 						else if(type == PeerConstants.messageType.UNCHOKE.getValue()) {
 
@@ -261,10 +270,57 @@ public class peerProcess {
 	  Only unchoked = if peerNode.unchoked == true
 	 */
 
-	class Choke implements Runnable{
+	class ChokeUnChoke implements Runnable{
 
 		public void run() {
 
+			int unchokeInterval = configFileObj.getUnChokingInterval();
+			while(flag) {
+				try {
+					int interestedPeersSize = interested_peers.size();
+					if(interestedPeersSize > 0) {
+						int preferredNeighbors = configFileObj.getNoOfNeighbors();
+						if(interestedPeersSize < preferredNeighbors) {
+							Iterator<Integer> itr = interested_peers.iterator();
+							while(itr.hasNext()) {
+								int peerId = itr.next();
+								NeighborPeerInteraction npiObj = neighborPeerConnections.get(peerId);
+								if(!npiObj.unchoked) {//Don't send unchoked if it is already unchoked
+									npiObj.sendUnChokeMsg(false);
+								}							
+							}
+						}
+						else {
+							Random rand = new Random();
+							List<Integer> tempPeersList = new ArrayList<>(interested_peers);
+							//select preferred Neighbors and unchoke them
+							for(int i=0;i<preferredNeighbors;i++) {
+								int randomIdx = rand.nextInt(tempPeersList.size());
+								int peerId = tempPeersList.get(randomIdx);
+								NeighborPeerInteraction npiObj = neighborPeerConnections.get(peerId);
+								//Don't send unchoked if it is already unchoked
+								if(!npiObj.unchoked) {
+									npiObj.sendUnChokeMsg(false);
+								}							
+								tempPeersList.remove(randomIdx);
+							}
+
+							//choke the peers who have not been selected
+							Iterator<Integer> itr = tempPeersList.iterator();
+							while(itr.hasNext()) {
+								int peerId = itr.next();
+								NeighborPeerInteraction npiObj = neighborPeerConnections.get(peerId);
+								npiObj.sendChokeMsg();
+							}
+						}
+					}
+					TimeUnit.SECONDS.sleep(unchokeInterval);
+				}catch(InterruptedException ie) {
+					ie.printStackTrace();
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 
@@ -280,11 +336,11 @@ public class peerProcess {
 						Random rand = new Random();
 						int random = rand.nextInt(interestedPeersSize); 
 						int peerId = interested_peers.get(random);
-						optimisticallyUnchokedPeer = peerId;
+						optimisticallyUnchokedPeer.set(peerId);
 						NeighborPeerInteraction npiObj = neighborPeerConnections.get(peerId);
 						npiObj.sendUnChokeMsg(true);
 						TimeUnit.SECONDS.sleep(optimisticSleepingInterval);
-						optimisticallyUnchokedPeer = -1;
+						optimisticallyUnchokedPeer.set(-1);
 
 						//choke the peer if it is only optimistically unchoked and not an unchoked peer 
 						if(!npiObj.unchoked) {
