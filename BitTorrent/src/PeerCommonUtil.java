@@ -68,30 +68,6 @@ public class PeerCommonUtil {
 		}
 	}
 
-	public static byte[] ByteCopyArr(byte[] original, int from, int curr)
-	{
-		int modlength = curr - from; 
-		if (modlength<0) 
-			throw new IllegalArgumentException(from + " > " + curr); 
-		byte [] new_copy = new byte[modlength]; 
-		System.arraycopy(original,from,new_copy, 0, Math.min(original.length - from, modlength)); 
-		return new_copy; 
-	}
-
-
-	public static boolean missingFileChunk(int[] PeerBit, int[] ConnectedBit, int size) 
-	{
-		for(int i=0;i< size;i++)
-		{
-			if(!(PeerBit[i] == 0 && ConnectedBit[i] ==1))                        //DoubleCheck
-			{
-				return false; 
-			}
-		}
-		return true;
-	}
-
-
 	public static int randomFileChunk(int[] PeerBit, int[] ConnectedBit, int size)
 	{
 		List<Integer> chunklist = new ArrayList<>(); 
