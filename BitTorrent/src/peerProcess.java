@@ -131,7 +131,7 @@ public class peerProcess {
 			}			
 		}
 
-//Don't send choke message if the peer is optimistically unchoked but remove it from unchoked_peers and set unchoked = false
+		//Don't send choke message if the peer is optimistically unchoked but remove it from unchoked_peers and set unchoked = false
 		public synchronized void sendChokeMsg() {
 			if(optimisticallyUnchokedPeer.get() != peerId) {
 				byte[] message = getMessage(PeerConstants.messageType.CHOKE.getValue(),null);
@@ -241,18 +241,22 @@ public class peerProcess {
 						}
 						else if(type == PeerConstants.messageType.NOT_INTERESTED.getValue()) {
 							int index = interested_peers.indexOf(peerId);
-							interested_peers.remove(index);
+							if(index != -1) {
+								interested_peers.remove(index);
+							}				
 							if(peerId == optimisticallyUnchokedPeer.get()) {
 								optimisticallyUnchokedPeer.set(-1);
 							}
 							sendChokeMsg();
 						}
+						else if(type == PeerConstants.messageType.CHOKE.getValue()) {
+							System.out.println(peerId +" has choked me");
+
+						}
 						else if(type == PeerConstants.messageType.UNCHOKE.getValue()) {
 
 						}
-						else if(type == PeerConstants.messageType.CHOKE.getValue()) {
-
-						}
+						
 					}catch(IOException e) {
 						e.printStackTrace();
 					}
