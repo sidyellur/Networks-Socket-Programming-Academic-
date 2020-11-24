@@ -179,12 +179,7 @@ public class peerProcess {
 			boolean isInterested = checkIfPeerHasInterestingPieces();
 			byte[] message;
 			//send interested msg as peer has pieces that I don't have
-			if(isInterested) {
-				message = getMessage(PeerConstants.messageType.INTERESTED.getValue(),null);		
-			}
-			else {
-				message = getMessage(PeerConstants.messageType.NOT_INTERESTED.getValue(),null);
-			}
+			message = isInterested ? getMessage(PeerConstants.messageType.INTERESTED.getValue(),null):getMessage(PeerConstants.messageType.NOT_INTERESTED.getValue(),null);		
 			try {
 				outputStream.write(message);
 				outputStream.flush();
@@ -241,7 +236,7 @@ public class peerProcess {
 							interested_peers.addIfAbsent(peerId);
 						}
 						else if(type == PeerConstants.messageType.NOT_INTERESTED.getValue()) {
-							
+
 						}
 						else if(type == PeerConstants.messageType.UNCHOKE.getValue()) {
 
