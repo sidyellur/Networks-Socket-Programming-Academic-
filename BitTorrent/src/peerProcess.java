@@ -130,7 +130,7 @@ public class peerProcess {
 			}			
 		}
 
-		public synchronized void sendChokeMsg(boolean isOptimistically) {
+		public synchronized void sendChokeMsg() {
 			byte[] message = getMessage(PeerConstants.messageType.CHOKE.getValue(),null);
 			try {
 				outputStream.write(message);
@@ -138,13 +138,13 @@ public class peerProcess {
 			}catch(IOException e) {
 				e.printStackTrace();
 			}
-			if(!isOptimistically) {
+			if(unchoked) {
 				unchoked = false;
 				int index = unchoked_peers.indexOf(peerId);
 				if(index != -1) {
 					unchoked_peers.remove(index);
-				}		
-			}		
+				}	
+			}					
 		}
 
 		public synchronized void sendUnChokeMsg(boolean isOptimistically) {
@@ -155,6 +155,7 @@ public class peerProcess {
 			}catch(IOException e) {
 				e.printStackTrace();
 			}
+			//Set unchoked = true only if it is not optimistically unchoked neighbour
 			if(!isOptimistically) {
 				unchoked = true;
 				unchoked_peers.addIfAbsent(peerId);
@@ -222,14 +223,17 @@ public class peerProcess {
 									outputStream.flush();
 								}
 							}
-
 						}
 						else if(type == PeerConstants.messageType.INTERESTED.getValue()) {
 							//System.out.println(peerId +" Interested");
-							if(!interested_peers.contains(peerId)) {
-								interested_peers.add(peerId);
-							}
-						}	
+							interested_peers.addIfAbsent(peerId);
+						}
+						else if(type == PeerConstants.messageType.UNCHOKE.getValue()) {
+
+						}
+						else if(type == PeerConstants.messageType.CHOKE.getValue()) {
+
+						}
 					}catch(IOException e) {
 						e.printStackTrace();
 					}
@@ -241,6 +245,12 @@ public class peerProcess {
 
 	}
 
+	/* A peerNode with peerId is
+	  Only OptimisticallyUnchoked = if optimisticallyUnchokedPeer == peerId 
+	  OptimisticallyUnchoked && Unchoked = if (optimisticallyUnchokedPeer == peerId && peerNode.unchoked == true)
+	  Only unchoked = if peerNode.unchoked == true
+	 */
+
 	class Choke implements Runnable{
 
 		public void run() {
@@ -248,6 +258,7 @@ public class peerProcess {
 		}
 	}
 
+	//Optimistic Unchoke thread 
 	class OptimisticUnChoke implements Runnable{
 
 		public void run() {
@@ -264,7 +275,11 @@ public class peerProcess {
 						npiObj.sendUnChokeMsg(true);
 						TimeUnit.SECONDS.sleep(optimisticSleepingInterval);
 						optimisticallyUnchokedPeer = -1;
-						npiObj.sendChokeMsg(true);
+
+						//choke the peer if it is only optimistically unchoked and not an unchoked peer 
+						if(!npiObj.unchoked) {
+							npiObj.sendChokeMsg();
+						}			
 					}
 				}
 			}catch(InterruptedException ie) {
