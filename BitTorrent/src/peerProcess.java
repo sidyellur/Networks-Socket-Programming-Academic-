@@ -175,18 +175,22 @@ public class peerProcess {
 			return interested;
 		}
 
-		public void sendInterestedMsg() {	
+		public void sendInterestedorNotMsg() {	
 			boolean isInterested = checkIfPeerHasInterestingPieces();
+			byte[] message;
 			//send interested msg as peer has pieces that I don't have
 			if(isInterested) {
-				byte[] interestedMsg = getMessage(PeerConstants.messageType.INTERESTED.getValue(),null);
-				try {
-					outputStream.write(interestedMsg);
-					outputStream.flush();
-				}catch(IOException ie) {
-					ie.printStackTrace();
-				}			
+				message = getMessage(PeerConstants.messageType.INTERESTED.getValue(),null);		
 			}
+			else {
+				message = getMessage(PeerConstants.messageType.NOT_INTERESTED.getValue(),null);
+			}
+			try {
+				outputStream.write(message);
+				outputStream.flush();
+			}catch(IOException ie) {
+				ie.printStackTrace();
+			}	
 		}
 
 		class NeighborPeerInteractionThread implements Runnable{
@@ -229,12 +233,15 @@ public class peerProcess {
 							if(hasFullFile) {
 								peerNode.setHaveFile(1);
 								peersWithEntireFile++;
-								sendInterestedMsg();//send interested message since the peer has full file
+								sendInterestedorNotMsg();//send interested message since the peer has full file
 							}
 						}
 						else if(type == PeerConstants.messageType.INTERESTED.getValue()) {
 							//System.out.println(peerId +" Interested");
 							interested_peers.addIfAbsent(peerId);
+						}
+						else if(type == PeerConstants.messageType.NOT_INTERESTED.getValue()) {
+							
 						}
 						else if(type == PeerConstants.messageType.UNCHOKE.getValue()) {
 
