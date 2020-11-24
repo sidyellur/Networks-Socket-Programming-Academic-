@@ -175,6 +175,20 @@ public class peerProcess {
 			return interested;
 		}
 
+		public void sendInterestedMsg() {	
+			boolean isInterested = checkIfPeerHasInterestingPieces();
+			//send interested msg as peer has pieces that I don't have
+			if(isInterested) {
+				byte[] interestedMsg = getMessage(PeerConstants.messageType.INTERESTED.getValue(),null);
+				try {
+					outputStream.write(interestedMsg);
+					outputStream.flush();
+				}catch(IOException ie) {
+					ie.printStackTrace();
+				}			
+			}
+		}
+
 		class NeighborPeerInteractionThread implements Runnable{
 
 			public void run() {		
@@ -215,13 +229,7 @@ public class peerProcess {
 							if(hasFullFile) {
 								peerNode.setHaveFile(1);
 								peersWithEntireFile++;
-								boolean isInterested = checkIfPeerHasInterestingPieces();
-								//send interested msg as peer has pieces that I don't have
-								if(isInterested) {
-									byte[] interestedMsg = getMessage(PeerConstants.messageType.INTERESTED.getValue(),null);
-									outputStream.write(interestedMsg);
-									outputStream.flush();
-								}
+								sendInterestedMsg();//send interested message since the peer has full file
 							}
 						}
 						else if(type == PeerConstants.messageType.INTERESTED.getValue()) {
