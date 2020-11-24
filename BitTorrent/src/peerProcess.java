@@ -13,7 +13,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class peerProcess {
 	private static ReadFiles rfObj = null;
@@ -23,15 +26,20 @@ public class peerProcess {
 	private static ConcurrentHashMap<Integer,Integer> bitfieldHM = new ConcurrentHashMap<>();
 	private static ConcurrentHashMap < Integer, Integer > downloadRate = new ConcurrentHashMap<>();
 	private static ConcurrentHashMap<Integer,NeighborPeerInteraction> neighborPeerConnections = new ConcurrentHashMap<>();
+	private static CopyOnWriteArrayList<Integer> interested_peers = new CopyOnWriteArrayList <> ();
+	private static CopyOnWriteArrayList<Integer> unchoked_peers = new CopyOnWriteArrayList <> ();
 	private static int currentPeerIndex = -1;
 	private static int totalPeers = -1;
 	private static ServerSocket listener = null;
 	private static int peersWithEntireFile = 0;
-	private static int totalChunks = 0;
+	private static int totalChunks = 0; 
 	private static int sourcePortNumber = 0;
+	private static int optimisticallyUnchokedPeer = -1;
 	private static boolean complete_file;
+	private static boolean flag = true;
 
 	class NeighborPeerInteraction {
+		int peerId = -1;
 		Socket socket = null;
 		NeighbourPeerNode peerNode = null;
 		DataInputStream inputStream = null;
@@ -42,6 +50,7 @@ public class peerProcess {
 		public NeighborPeerInteraction(Socket socket, NeighbourPeerNode peerNode) throws IOException {
 			this.socket = socket;
 			this.peerNode = peerNode;
+			peerId = peerNode.getPeerId();
 			msg = new byte[5];
 			inputStream = new DataInputStream(socket.getInputStream());
 			outputStream = new DataOutputStream(socket.getOutputStream());		
@@ -121,14 +130,56 @@ public class peerProcess {
 			}			
 		}
 
+		public synchronized void sendChokeMsg(boolean isOptimistically) {
+			byte[] message = getMessage(PeerConstants.messageType.CHOKE.getValue(),null);
+			try {
+				outputStream.write(message);
+				outputStream.flush();
+			}catch(IOException e) {
+				e.printStackTrace();
+			}
+			if(!isOptimistically) {
+				unchoked = false;
+				int index = unchoked_peers.indexOf(peerId);
+				if(index != -1) {
+					unchoked_peers.remove(index);
+				}		
+			}		
+		}
+
+		public synchronized void sendUnChokeMsg(boolean isOptimistically) {
+			byte[] message = getMessage(PeerConstants.messageType.UNCHOKE.getValue(),null);
+			try {
+				outputStream.write(message);
+				outputStream.flush();
+			}catch(IOException e) {
+				e.printStackTrace();
+			}
+			if(!isOptimistically) {
+				unchoked = true;
+				unchoked_peers.addIfAbsent(peerId);
+			}				
+		}
+
+		//check if peer has any interesting pieces that I don't have
+		public boolean checkIfPeerHasInterestingPieces() {
+			boolean interested = false;
+			int[] peer_bitfield = peerNode.getBitfield();
+			for(int i =0;i < configFileObj.getNoOfChunks();i++) {
+				if(bitfieldHM.get(i) == 0 && peer_bitfield[i] == 1) {
+					interested = true;
+					break;
+				}
+			}
+			return interested;
+		}
+
 		class NeighborPeerInteractionThread implements Runnable{
 
 			public void run() {		
-				int peerId = peerNode.getPeerId();
-				System.out.println(peerId);
+				//System.out.println(peerId);
 				downloadRate.put(peerId, 0);
 				sendBitField();
-				boolean flag = true;
 				while(flag) {
 					try {
 						//Read first 4 bytes of the message which is size of the payload
@@ -142,7 +193,7 @@ public class peerProcess {
 						//Read next 1 byte which is the type of message
 						inputStream.read(msg,0,1);
 						int type = msg[0];
-						System.out.println("type of message = " + type);
+						//System.out.println("type of message = " + type);
 
 						//if type = Bitfield
 						if(type == PeerConstants.messageType.BITFIELD.getValue()) {
@@ -163,12 +214,22 @@ public class peerProcess {
 							if(hasFullFile) {
 								peerNode.setHaveFile(1);
 								peersWithEntireFile++;
-								//send interested as peer has pieces that I don't have
-								
+								boolean isInterested = checkIfPeerHasInterestingPieces();
+								//send interested msg as peer has pieces that I don't have
+								if(isInterested) {
+									byte[] interestedMsg = getMessage(PeerConstants.messageType.INTERESTED.getValue(),null);
+									outputStream.write(interestedMsg);
+									outputStream.flush();
+								}
 							}
-							
+
 						}
-						flag = false;	
+						else if(type == PeerConstants.messageType.INTERESTED.getValue()) {
+							//System.out.println(peerId +" Interested");
+							if(!interested_peers.contains(peerId)) {
+								interested_peers.add(peerId);
+							}
+						}	
 					}catch(IOException e) {
 						e.printStackTrace();
 					}
@@ -190,7 +251,25 @@ public class peerProcess {
 	class OptimisticUnChoke implements Runnable{
 
 		public void run() {
-
+			try {
+				while(flag) {
+					if(interested_peers.size() > 0) {
+						int optimisticSleepingInterval = configFileObj.getOptUnChokingInterval();
+						int interestedPeersSize = interested_peers.size();
+						Random rand = new Random();
+						int random = rand.nextInt(interestedPeersSize); 
+						int peerId = interested_peers.get(random);
+						optimisticallyUnchokedPeer = peerId;
+						NeighborPeerInteraction npiObj = neighborPeerConnections.get(peerId);
+						npiObj.sendUnChokeMsg(true);
+						TimeUnit.SECONDS.sleep(optimisticSleepingInterval);
+						optimisticallyUnchokedPeer = -1;
+						npiObj.sendChokeMsg(true);
+					}
+				}
+			}catch(InterruptedException ie) {
+				ie.printStackTrace();
+			}
 		}
 	}
 
@@ -344,6 +423,12 @@ public class peerProcess {
 		Thread server = new Thread(serverObj,"Server Thread");
 		server.start();
 		//end
+
+		//		while(flag) {
+		//			if(peersWithEntireFile == totalPeers) {
+		//				flag = false;
+		//			}
+		//		}
 
 	}
 
