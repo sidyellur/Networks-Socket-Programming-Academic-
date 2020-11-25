@@ -227,6 +227,10 @@ public class peerProcess {
 				}			
 			}
 		}
+		
+		private void sendPieceMsg(int pieceIndex) {
+			
+		}
 
 		class NeighborPeerInteractionThread implements Runnable{
 
@@ -287,15 +291,16 @@ public class peerProcess {
 							sendChokeMsg();
 						}
 						else if(type == PeerConstants.messageType.CHOKE.getValue()) {
-							System.out.println(peerId +" has choked me");
+							//System.out.println(peerId +" has choked me");
 
 						}
 						else if(type == PeerConstants.messageType.UNCHOKE.getValue()) {
 							//send request message if peer has some interesting piece that I don't have else do nothing
-							System.out.println(peerId +" has unchoked me");
+							//System.out.println(peerId +" has unchoked me");
 							sendRequestMsg(); 
 						}
 						else if(type == PeerConstants.messageType.REQUEST.getValue()) {
+							
 							//get the index of the requested piece from the payload
 							byte[] payload = new byte[size-1];
 							for(int i = 0;i<size-1;i++) {
@@ -304,10 +309,12 @@ public class peerProcess {
 							int indexPiece = ByteBuffer.wrap(payload).getInt();
 							System.out.println(peerId +" has requested piece " + indexPiece);
 							
+							//send the requested piece only if the peer is either unchoked or optimistically unchoked
+							if(unchoked || (optimisticallyUnchokedPeer.get() == peerId)) {
+								
+							}
 							
-							
-							
-							
+										
 						}
 					}
 					System.out.println(peerId +" Thread finished");
@@ -380,7 +387,7 @@ public class peerProcess {
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
-			System.exit(0);
+			//System.exit(0);
 		}
 	}
 
@@ -411,7 +418,7 @@ public class peerProcess {
 			}catch(InterruptedException ie) {
 				ie.printStackTrace();
 			}
-			System.exit(0);
+		//	System.exit(0);
 		}
 	}
 
