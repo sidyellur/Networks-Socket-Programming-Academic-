@@ -32,7 +32,7 @@ public class peerProcess {
 	private static int currentPeerIndex = -1;
 	private static int totalPeers = -1;
 	private static ServerSocket listener = null;
-	private static int peersWithEntireFile = 0;
+	private static AtomicInteger peersWithEntireFile = new AtomicInteger(0);
 	private static int totalChunks = 0; 
 	private static int sourcePortNumber = 0;
 	private static AtomicInteger optimisticallyUnchokedPeer = new AtomicInteger(-1);
@@ -247,9 +247,17 @@ public class peerProcess {
 				}		
 			}
 		}
-
-		private void writePiece(byte[] data) {
-
+		
+		public synchronized void sendHaveMsg(int pieceIndex) {
+			ByteBuffer bb = ByteBuffer.allocate(4);
+			byte[] payload = bb.putInt(pieceIndex).array();
+			byte[] message = getMessage(PeerConstants.messageType.HAVE.getValue(),payload);
+			try {
+				outputStream.write(message);
+				outputStream.flush();
+			}catch(IOException ie) {
+				ie.printStackTrace();
+			}
 		}
 
 		class NeighborPeerInteractionThread implements Runnable{
@@ -292,7 +300,7 @@ public class peerProcess {
 							}
 							if(hasFullFile) {
 								peerNode.setHaveFile(1);
-								peersWithEntireFile++;
+								peersWithEntireFile.incrementAndGet();
 								sendInterestedorNotMsg();//send interested message since the peer has full file
 							}
 						}
@@ -332,6 +340,7 @@ public class peerProcess {
 							//send the requested piece only if the peer is either unchoked or optimistically unchoked and if source peer has the piece
 							sendPieceMsg(indexPiece);					
 						}
+//Received piece, write it to the file, update my bitfield, send request message to this peer and send have message to all the peers
 						else if(type == PeerConstants.messageType.PIECE.getValue()) {
 							byte[] piece = new byte[size-5];
 							byte[] indexArr = new byte[4];
@@ -339,16 +348,26 @@ public class peerProcess {
 								inputStream.read(indexArr,i,1);
 							}
 							int indexOfPieceRecvd = ByteBuffer.wrap(indexArr).getInt();
-							System.out.println("Recieved piece " +indexOfPieceRecvd+" from "+peerId);
+
 							if(bitfieldHM.get(indexOfPieceRecvd) == 0) {
+								System.out.println("Recieved piece " +indexOfPieceRecvd+" from "+peerId);
 								bitfieldHM.put(indexOfPieceRecvd, 1);
 								for(int i=0;i<piece.length;i++) {
 									inputStream.read(piece, i, 1);
 								}
 								utilObj.writePiece(sourcePeerId, indexOfPieceRecvd, piece);
+								sendRequestMsg();
+								
+//broadcast 'have' message to all the peers	so that they can update their bitfield copy of ur bitfield and request this piece if they don't have it			
+								for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
+									NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
+									npiObjAdjacentPeer.sendHaveMsg(indexOfPieceRecvd);
+								}
 							}
+						}else if(type == PeerConstants.messageType.HAVE.getValue()) {
+							
 						}
-						
+
 					}
 					System.out.println(peerId +" Thread finished");
 					inputStream.close();
@@ -587,7 +606,7 @@ public class peerProcess {
 		//current peer has file, set bitfield as true for all bits and split the file into chunks
 		int bit = 0;
 		if(complete_file) {
-			peersWithEntireFile++;
+			peersWithEntireFile.incrementAndGet();
 			bit = 1;
 			utilObj.splitFileintoChunks(""+sourcePeerId, configFileObj);
 		}
@@ -616,9 +635,6 @@ public class peerProcess {
 		optUnChokeThread.start();
 
 		while(flag) {
-			//					if(peersWithEntireFile == totalPeers) {
-			//						flag = false;
-			//					}
 			System.out.println("Main Thread");
 			TimeUnit.MINUTES.sleep(10);
 			System.out.println("Exiting");
