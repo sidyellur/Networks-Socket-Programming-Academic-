@@ -296,6 +296,17 @@ public class peerProcess {
 							sendRequestMsg(); 
 						}
 						else if(type == PeerConstants.messageType.REQUEST.getValue()) {
+							//get the index of the requested piece from the payload
+							byte[] payload = new byte[size-1];
+							for(int i = 0;i<size-1;i++) {
+								inputStream.read(payload, i, 1);
+							}
+							int indexPiece = ByteBuffer.wrap(payload).getInt();
+							System.out.println(peerId +" has requested piece " + indexPiece);
+							
+							
+							
+							
 							
 						}
 					}
