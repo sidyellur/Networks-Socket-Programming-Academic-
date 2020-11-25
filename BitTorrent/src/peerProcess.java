@@ -38,6 +38,7 @@ public class peerProcess {
 	private static AtomicInteger optimisticallyUnchokedPeer = new AtomicInteger(-1);
 	private static boolean complete_file;
 	private static boolean flag = true;
+	private static PeerCommonUtil utilObj = null;
 
 	class NeighborPeerInteraction {
 		int peerId = -1;
@@ -227,9 +228,28 @@ public class peerProcess {
 				}			
 			}
 		}
-		
+
+		//send a piece that is requested by the peer if the peer is unchoked or optimistically unchoked and u have the piece
 		private void sendPieceMsg(int pieceIndex) {
-			
+			if((unchoked || (optimisticallyUnchokedPeer.get() == peerId)) && bitfieldHM.get(pieceIndex) == 1) {
+				try {
+					byte[] piece = utilObj.returnPiece(sourcePeerId, pieceIndex);
+					ByteBuffer bb = ByteBuffer.allocate(4);
+					byte[] index = bb.putInt(pieceIndex).array();
+					byte[] payload = new byte[index.length+piece.length];
+					System.arraycopy(index, 0, payload, 0, index.length);
+					System.arraycopy(piece, 0, payload, 4, piece.length);
+					byte[] pieceMsg = getMessage(PeerConstants.messageType.PIECE.getValue(),payload);
+					outputStream.write(pieceMsg);
+					outputStream.flush();
+				}catch(IOException ie){
+					ie.printStackTrace();
+				}		
+			}
+		}
+
+		private void writePiece(byte[] data) {
+
 		}
 
 		class NeighborPeerInteractionThread implements Runnable{
@@ -300,7 +320,7 @@ public class peerProcess {
 							sendRequestMsg(); 
 						}
 						else if(type == PeerConstants.messageType.REQUEST.getValue()) {
-							
+
 							//get the index of the requested piece from the payload
 							byte[] payload = new byte[size-1];
 							for(int i = 0;i<size-1;i++) {
@@ -308,14 +328,27 @@ public class peerProcess {
 							}
 							int indexPiece = ByteBuffer.wrap(payload).getInt();
 							System.out.println(peerId +" has requested piece " + indexPiece);
-							
-							//send the requested piece only if the peer is either unchoked or optimistically unchoked
-							if(unchoked || (optimisticallyUnchokedPeer.get() == peerId)) {
-								
-							}
-							
-										
+
+							//send the requested piece only if the peer is either unchoked or optimistically unchoked and if source peer has the piece
+							sendPieceMsg(indexPiece);					
 						}
+						else if(type == PeerConstants.messageType.PIECE.getValue()) {
+							byte[] piece = new byte[size-5];
+							byte[] indexArr = new byte[4];
+							for(int i = 0;i<4;i++) {
+								inputStream.read(indexArr,i,1);
+							}
+							int indexOfPieceRecvd = ByteBuffer.wrap(indexArr).getInt();
+							System.out.println("Recieved piece " +indexOfPieceRecvd+" from "+peerId);
+							if(bitfieldHM.get(indexOfPieceRecvd) == 0) {
+								bitfieldHM.put(indexOfPieceRecvd, 1);
+								for(int i=0;i<piece.length;i++) {
+									inputStream.read(piece, i, 1);
+								}
+								utilObj.writePiece(sourcePeerId, indexOfPieceRecvd, piece);
+							}
+						}
+						
 					}
 					System.out.println(peerId +" Thread finished");
 					inputStream.close();
@@ -418,7 +451,7 @@ public class peerProcess {
 			}catch(InterruptedException ie) {
 				ie.printStackTrace();
 			}
-		//	System.exit(0);
+			//	System.exit(0);
 		}
 	}
 
@@ -443,7 +476,7 @@ public class peerProcess {
 					DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
 					//Send handshake
-					byte[] handShakeHeader = PeerCommonUtil.getHandshakePacket(sourcePeerId);
+					byte[] handShakeHeader = utilObj.getHandshakePacket(sourcePeerId);
 					outputStream.write(handShakeHeader);
 
 					//Receive handshake
@@ -492,7 +525,7 @@ public class peerProcess {
 					// System.out.println(peerId);
 
 					//send Handshake
-					byte[] sendHandshake = PeerCommonUtil.getHandshakePacket(sourcePeerId);
+					byte[] sendHandshake = utilObj.getHandshakePacket(sourcePeerId);
 					outputStream.write(sendHandshake);
 
 					NeighbourPeerNode peerObj = neighborPeers.get(peerId);
@@ -541,6 +574,7 @@ public class peerProcess {
 		List<String> configRows = rfObj.parseTheFile("Common.cfg");
 		configFileObj = ConfigFile.getConfigFileObject(configRows);
 		totalChunks = configFileObj.getNoOfChunks();
+		utilObj = new PeerCommonUtil();
 		//	System.out.println(configFileReader.getNoOfNeighbors());
 
 		//Read PeerInfo.cfg and set the PeerNode.java 
@@ -548,14 +582,14 @@ public class peerProcess {
 		setPeerNodes(peerRows);
 
 		//make peer directory
-		PeerCommonUtil.makePeerDirectory(sourcePeerId);
+		utilObj.makePeerDirectory(sourcePeerId);
 
 		//current peer has file, set bitfield as true for all bits and split the file into chunks
 		int bit = 0;
 		if(complete_file) {
 			peersWithEntireFile++;
 			bit = 1;
-			PeerCommonUtil.splitFileintoChunks(""+sourcePeerId, configFileObj);
+			utilObj.splitFileintoChunks(""+sourcePeerId, configFileObj);
 		}
 
 		for(int i = 0;i<totalChunks;i++) {
@@ -586,7 +620,7 @@ public class peerProcess {
 			//						flag = false;
 			//					}
 			System.out.println("Main Thread");
-			TimeUnit.MINUTES.sleep(1);
+			TimeUnit.MINUTES.sleep(10);
 			System.out.println("Exiting");
 			flag = false;
 		}

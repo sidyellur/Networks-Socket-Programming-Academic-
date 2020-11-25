@@ -15,9 +15,11 @@ import java.util.Random;
 
 //Write all the common helper functions here
 public class PeerCommonUtil {
+	
+	PeerCommonUtil(){}
 
 	//Create peer directory if not created
-	public static void makePeerDirectory(int peerId) {
+	public void makePeerDirectory(int peerId) {
 		try {
 			File peerDir = new File("peer_"+peerId);
 			if(!peerDir.exists()) {
@@ -30,7 +32,7 @@ public class PeerCommonUtil {
 	}
 
 	//split the whole file into chunks and write into the peer directory as chunks
-	public static void splitFileintoChunks(String peerId, ConfigFile configFileObj) {
+	public void splitFileintoChunks(String peerId, ConfigFile configFileObj) {
 		int noOfChunks = configFileObj.getNoOfChunks();
 		int chunkSize = configFileObj.getChunkSize();
 		int fileSize = configFileObj.getFileSize();
@@ -49,7 +51,8 @@ public class PeerCommonUtil {
 					chunkLength = fileSize - chunkstobeCopied;			
 				}
 				byte[] copy = new byte[chunkLength];
-				String fileName = "peer_"+peerId+"/"+"TheFile_"+i+".dat";
+				String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
+				fileName = "peer_"+peerId+"/"+fileName+"_"+i+".dat";
 				chunkFiles[i] = new File(fileName);
 				FileOutputStream fos = new FileOutputStream(fileName);
 				fis.read(copy);
@@ -68,7 +71,7 @@ public class PeerCommonUtil {
 		}
 	}
 
-	public synchronized static byte[] getHandshakePacket(int sourcePeerId) 
+	public synchronized byte[] getHandshakePacket(int sourcePeerId) 
 	{
 		String hsHeader = PeerConstants.HANDSHAKE_HEADER;
 		byte[] headerBytes = hsHeader.getBytes();
@@ -91,5 +94,27 @@ public class PeerCommonUtil {
 	
 		return hspacket; 
 
+	}
+	
+	public synchronized byte[] returnPiece(int peerId,int chunkIndex) throws IOException {
+		
+	     String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
+	     fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex+".dat";
+	     File chunkFile = new File(fileName);
+	     FileInputStream fis = new FileInputStream(chunkFile);
+	     int length = (int)chunkFile.length();
+	     byte[] chunk = new byte[length];
+	     fis.read(chunk);
+	     fis.close();
+	     return chunk;
+	}
+	
+	public synchronized void writePiece(int peerId,int chunkIndex,byte[] piece) throws IOException{
+		String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
+		fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex+".dat";
+		File file = new File(fileName);
+		FileOutputStream fos = new FileOutputStream(file);
+		fos.write(piece);
+		fos.close();
 	}
 }
