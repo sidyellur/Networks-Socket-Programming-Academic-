@@ -192,14 +192,51 @@ public class peerProcess {
 			}	
 		}
 
+		//get index of a random chunk that peer has and I don't have. If no such chunk is found return -1
+		private int getRandomChunkNeeded() {
+			int randomPieceIdx = -1;
+			List<Integer> chunksIndicesOfPeer = new ArrayList<>();
+			int[] peer_bitfield = peerNode.getBitfield();
+			for(int i=0;i<totalChunks;i++) {
+				//add index of the chunk that Peer has and I don't have
+				if(bitfieldHM.get(i) == 0 && peer_bitfield[i] == 1) { 
+					chunksIndicesOfPeer.add(i);
+				}
+			}
+			//select a random chunk that peer has and I don't have
+			if(chunksIndicesOfPeer.size() > 0) {
+				Random rand = new Random();
+				int randomIdx = rand.nextInt(chunksIndicesOfPeer.size());
+				randomPieceIdx = chunksIndicesOfPeer.get(randomIdx);
+			}
+
+			return randomPieceIdx;
+		}
+
+		public void sendRequestMsg() {
+			int randomChunkIdx = getRandomChunkNeeded();
+			if(randomChunkIdx != -1) {
+				ByteBuffer bb = ByteBuffer.allocate(4);
+				byte[] payload = bb.putInt(randomChunkIdx).array();
+				byte[] message = getMessage(PeerConstants.messageType.REQUEST.getValue(),payload);
+				try {
+					outputStream.write(message);
+					outputStream.flush();
+				}catch(IOException ie) {
+					ie.printStackTrace();
+				}			
+			}
+		}
+
 		class NeighborPeerInteractionThread implements Runnable{
 
 			public void run() {		
 				//System.out.println(peerId);
 				downloadRate.put(peerId, 0);
 				sendBitField();
-				while(flag) {
-					try {
+				try {
+					while(flag) {
+
 						//Read first 4 bytes of the message which is size of the payload
 						for(int i = 0;i<4;i++) {
 							inputStream.read(msg, i, 1);
@@ -254,15 +291,21 @@ public class peerProcess {
 
 						}
 						else if(type == PeerConstants.messageType.UNCHOKE.getValue()) {
-
+							//send request message if peer has some interesting piece that I don't have else do nothing
+							System.out.println(peerId +" has unchoked me");
+							sendRequestMsg(); 
 						}
-						
-					}catch(IOException e) {
-						e.printStackTrace();
+						else if(type == PeerConstants.messageType.REQUEST.getValue()) {
+							
+						}
 					}
-
+					System.out.println(peerId +" Thread finished");
+					inputStream.close();
+					outputStream.close();
 				}
-
+				catch(IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 
@@ -279,8 +322,9 @@ public class peerProcess {
 		public void run() {
 
 			int unchokeInterval = configFileObj.getUnChokingInterval();
-			while(flag) {
-				try {
+			try {
+				while(flag) {
+
 					int interestedPeersSize = interested_peers.size();
 					if(interestedPeersSize > 0) {
 						int preferredNeighbors = configFileObj.getNoOfNeighbors();
@@ -319,12 +363,13 @@ public class peerProcess {
 						}
 					}
 					TimeUnit.SECONDS.sleep(unchokeInterval);
-				}catch(InterruptedException ie) {
-					ie.printStackTrace();
-				}catch(Exception e) {
-					e.printStackTrace();
 				}
+			}catch(InterruptedException ie) {
+				ie.printStackTrace();
+			}catch(Exception e) {
+				e.printStackTrace();
 			}
+			System.exit(0);
 		}
 	}
 
@@ -355,6 +400,7 @@ public class peerProcess {
 			}catch(InterruptedException ie) {
 				ie.printStackTrace();
 			}
+			System.exit(0);
 		}
 	}
 
@@ -508,22 +554,24 @@ public class peerProcess {
 		Thread server = new Thread(serverObj,"Server Thread");
 		server.start();
 		//end
-		
+
 		ChokeUnChoke chokeObj = p1.new ChokeUnChoke();
 		Thread chokeThread = new Thread(chokeObj,"Choke thread");
 		chokeThread.start();
-		
+
 		OptimisticUnChoke optChokeObj = p1.new OptimisticUnChoke();
 		Thread optUnChokeThread = new Thread(optChokeObj,"Optimistic Choke thread");
 		optUnChokeThread.start();
 
-				while(flag) {
-//					if(peersWithEntireFile == totalPeers) {
-//						flag = false;
-//					}
-					TimeUnit.MINUTES.sleep(1);
-					flag = false;
-				}
+		while(flag) {
+			//					if(peersWithEntireFile == totalPeers) {
+			//						flag = false;
+			//					}
+			System.out.println("Main Thread");
+			TimeUnit.MINUTES.sleep(1);
+			System.out.println("Exiting");
+			flag = false;
+		}
 
 	}
 

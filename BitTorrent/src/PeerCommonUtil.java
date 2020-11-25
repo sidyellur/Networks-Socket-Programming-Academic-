@@ -68,33 +68,7 @@ public class PeerCommonUtil {
 		}
 	}
 
-	public static int randomFileChunk(int[] PeerBit, int[] ConnectedBit, int size)
-	{
-		List<Integer> chunklist = new ArrayList<>(); 
-		for(int j=0;j<size;j++)
-		{
-			if(PeerBit[j] == 0 && ConnectedBit[j] ==1)
-			{
-				chunklist.add(j);
-			}
-		}
-
-		int chunksize = chunklist.size(); 
-		if(chunksize > 0) 
-		{
-			int res;
-			Random r = new Random(); 
-			int r_index = Math.abs(r.nextInt() % chunksize); 
-			return res = chunklist.get(r_index);                      //Doublecheck
-		}
-		else 
-		{
-			return -1; 
-		}
-	}
-
-
-	public static byte[] getHandshakePacket(int sourcePeerId) 
+	public synchronized static byte[] getHandshakePacket(int sourcePeerId) 
 	{
 		String hsHeader = PeerConstants.HANDSHAKE_HEADER;
 		byte[] headerBytes = hsHeader.getBytes();
