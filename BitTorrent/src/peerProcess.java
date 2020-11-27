@@ -450,7 +450,7 @@ public class peerProcess {
 					System.out.println(peerId +" Thread finished");
 					inputStream.close();
 					outputStream.close();
-					socket.close();
+					//socket.close();
 				}
 				catch(IOException e) {
 					e.printStackTrace();
@@ -720,9 +720,7 @@ public class peerProcess {
 		System.out.println("Total Peers "+totalPeers);
 
 		while(flag) {
-
 			if(peersWithEntireFile.get() == totalPeers) {
-
 				System.out.println("Exiting");
 				flag = false;
 				Thread.sleep(5000);
