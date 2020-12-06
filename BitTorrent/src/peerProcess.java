@@ -31,6 +31,7 @@ public class peerProcess {
 	private static ConcurrentHashMap<Integer,NeighborPeerInteraction> neighborPeerConnections = new ConcurrentHashMap<>();
 	private static CopyOnWriteArrayList<Integer> interested_peers = new CopyOnWriteArrayList <> ();
 	private static CopyOnWriteArrayList<Integer> unchoked_peers = new CopyOnWriteArrayList <> ();
+	private static CopyOnWriteArrayList<Integer> completed_peers = new CopyOnWriteArrayList <> ();
 	private static int currentPeerIndex = -1;
 	private static int totalPeers = -1;
 	private static ServerSocket listener = null;
@@ -122,11 +123,8 @@ public class peerProcess {
 		//send bitfield messages
 		public synchronized void sendBitField(){
 			int[] bitfield = new int[totalChunks];
-			if(complete_file) {
-				Arrays.fill(bitfield, 1);
-			}
-			else {
-				Arrays.fill(bitfield, 0);
+			for(int i=0;i<bitfieldHM.size();i++) {
+				bitfield[i] = bitfieldHM.get(i);
 			}
 			byte[] payload = intArrayTobyteArray(bitfield);
 			byte[] message = getMessage(PeerConstants.messageType.BITFIELD.getValue(),payload);
@@ -289,6 +287,10 @@ public class peerProcess {
 			int[] peer_bitfield = peerNode.getBitfield();
 			peer_bitfield[havePieceIndex] = 1;
 			peerNode.setBitfield(peer_bitfield);
+//			System.out.println(peerNode.getPeerId()+"'s file");
+//			for(int i = 0;i<peer_bitfield.length;i++)
+//			   System.out.print(peer_bitfield[i]);
+//			System.out.println("");
 			if(bitfieldHM.get(havePieceIndex) == 0) {
 				ByteBuffer bb = ByteBuffer.allocate(4);
 				byte[] payload = bb.putInt(havePieceIndex).array();
@@ -321,8 +323,12 @@ public class peerProcess {
 				}
 				sendChokeMsg();
 				peerNode.setHaveFile(1);
-				peersWithEntireFile.incrementAndGet(); //if neighbor has completed file
-				System.out.println(peerId +" (neighbor)has finished downloading");
+				if(!completed_peers.contains(peerId)) {
+					completed_peers.add(peerId);
+					peersWithEntireFile.incrementAndGet(); //if neighbor has completed file
+					System.out.println(peerId +" (neighbor)has finished downloading");			
+				}
+				
 				if(!complete_file) {//if I haven't completed downloading, then send interested message
 					sendInterestedorNotMsg();
 				}
@@ -367,8 +373,9 @@ public class peerProcess {
 									break;
 								}
 							}
-							if(hasFullFile) {
+							if(hasFullFile && !completed_peers.contains(peerId)) {
 								peerNode.setHaveFile(1);
+								completed_peers.add(peerId);
 								peersWithEntireFile.incrementAndGet();//if neighbor has the full file initially
 								System.out.println(peerId + " has the full file initially");
 								sendInterestedorNotMsg();//send interested message since the peer has full file
@@ -444,13 +451,14 @@ public class peerProcess {
 								}
 								logFileObj.log_downloading_a_piece(sourcePeerId, peerId, indexOfPieceRecvd, numberOfPiecesIHave);
 								//check if I have completed the full file, if yes increment peersWithEntireFile
-								if(haveICompleted) {
+								if(haveICompleted && !completed_peers.contains(sourcePeerId)) {
+									completed_peers.add(sourcePeerId);
 									peersWithEntireFile.incrementAndGet(); //check if I have completed the download of file fully 
 									System.out.println(sourcePeerId +" (I) have completed downloading");
 									complete_file = true;
 									logFileObj.log_completion_of_download(sourcePeerId);			
 								}
-								else {
+								else if(!completed_peers.contains(sourcePeerId)){
 									sendRequestMsg();
 								}
 							}				
@@ -749,7 +757,8 @@ public class peerProcess {
 
 		//current peer has file, set bitfield as true for all bits and split the file into chunks
 		int bit = 0;
-		if(complete_file) {
+		if(complete_file && !completed_peers.contains(sourcePeerId)) {
+			completed_peers.add(sourcePeerId);
 			peersWithEntireFile.incrementAndGet(); //if I have the file initially
 			System.out.println(sourcePeerId +" (I) have the full file");
 			bit = 1;
@@ -781,23 +790,13 @@ public class peerProcess {
 		System.out.println("Total Peers "+totalPeers);
 
 		while(true) {
-			//			for(Map.Entry<Integer,NeighbourPeerNode> e : neighborPeers.entrySet()) {
-			//				int[] bitF = e.getValue().getBitfield();
-			//				if(bitF != null) {
-			//					System.out.println(e.getKey() +"'s bitfield");
-			//					for(int i = 0;i<bitF.length;i++) {
-			//					  System.out.print(bitF[i]);
-			//					}
-			//					System.out.println(" ");
-			//				}			
-			//			}
 			TimeUnit.SECONDS.sleep(10);
 			if(peersWithEntireFile.get() >= totalPeers) {
 				for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
 					NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
 					npiObjAdjacentPeer.sendCompleteMsg();
 				}
-				TimeUnit.SECONDS.sleep(15);
+				TimeUnit.SECONDS.sleep(10);
 				System.out.println("Correctly exiting");
 				System.exit(0);
 			}
