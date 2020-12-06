@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -137,6 +138,17 @@ public class peerProcess {
 				ie.printStackTrace();
 			}			
 		}
+		
+		public synchronized void sendCompleteMsg() {
+			byte[] message = getMessage(PeerConstants.messageType.COMPLETE.getValue(),null);
+			try {
+				outputStream.write(message);
+				outputStream.flush();
+			}
+			catch(IOException ie) {
+				ie.printStackTrace();
+			}
+		}
 
 		//Don't send choke message if the peer is optimistically unchoked but remove it from unchoked_peers and set unchoked = false
 		public synchronized void sendChokeMsg() {
@@ -146,7 +158,8 @@ public class peerProcess {
 					outputStream.write(message);
 					outputStream.flush();
 				}catch(IOException e) {
-					e.printStackTrace();
+					System.exit(0);
+					e.printStackTrace();				
 				}
 			}
 			if(unchoked) {
@@ -164,8 +177,10 @@ public class peerProcess {
 				outputStream.write(message);
 				outputStream.flush();
 			}catch(IOException e) {
-				e.printStackTrace();
+				System.exit(0);
+				e.printStackTrace();			
 			}
+
 			//Set unchoked = true only if it is not optimistically unchoked neighbour
 			if(!isOptimistically) {
 				unchoked = true;
@@ -433,7 +448,7 @@ public class peerProcess {
 									peersWithEntireFile.incrementAndGet(); //check if I have completed the download of file fully 
 									System.out.println(sourcePeerId +" (I) have completed downloading");
 									complete_file = true;
-									logFileObj.log_completion_of_download(sourcePeerId);
+									logFileObj.log_completion_of_download(sourcePeerId);			
 								}
 								else {
 									sendRequestMsg();
@@ -461,9 +476,11 @@ public class peerProcess {
 							}
 
 						}
+						else if(type == PeerConstants.messageType.COMPLETE.getValue()) {
+							System.exit(0);
+						}
 
 					}
-					//sendBitField();
 					System.out.println(peerId +" Thread finished");
 					System.out.println("Total peers with Full file = "+peersWithEntireFile.get());
 					//TimeUnit.SECONDS.sleep(8);
@@ -472,14 +489,15 @@ public class peerProcess {
 					//socket.close();
 				}
 				catch(IOException e) {
-					System.exit(0);
+					//System.exit(0);
 					//e.printStackTrace();
 				}
+
 				catch(Exception e) {
-					System.exit(0);
+					//System.exit(0);
 					//e.printStackTrace();
 				}
-				System.exit(0);
+				//System.exit(0);
 			}
 		}
 
@@ -543,10 +561,10 @@ public class peerProcess {
 					TimeUnit.SECONDS.sleep(unchokeInterval);
 				}
 			}catch(InterruptedException ie) {
-				System.exit(0);
+				//System.exit(0);
 				//ie.printStackTrace();
 			}catch(Exception e) {
-				System.exit(0);
+				//System.exit(0);
 				//e.printStackTrace();
 			}
 			//System.exit(0);
@@ -578,8 +596,9 @@ public class peerProcess {
 						}			
 					}
 				}
-			}catch(InterruptedException ie) {
-				System.exit(0);
+			}
+			catch(InterruptedException ie) {
+				//System.exit(0);
 				//ie.printStackTrace();
 			}
 			//System.exit(0);
@@ -774,6 +793,12 @@ public class peerProcess {
 			//			}
 			TimeUnit.SECONDS.sleep(10);
 			if(peersWithEntireFile.get() >= totalPeers) {
+				for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
+					NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
+					npiObjAdjacentPeer.sendCompleteMsg();
+				}
+				TimeUnit.SECONDS.sleep(15);
+				System.out.println("Correctly exiting");
 				System.exit(0);
 			}
 		}
