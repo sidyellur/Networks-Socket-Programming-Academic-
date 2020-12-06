@@ -377,7 +377,7 @@ public class peerProcess {
 								peerNode.setHaveFile(1);
 								completed_peers.add(peerId);
 								peersWithEntireFile.incrementAndGet();//if neighbor has the full file initially
-								System.out.println(peerId + " has the full file initially");
+								System.out.println(peerId + " has the full file");
 								sendInterestedorNotMsg();//send interested message since the peer has full file
 							}
 						}
@@ -456,7 +456,12 @@ public class peerProcess {
 									peersWithEntireFile.incrementAndGet(); //check if I have completed the download of file fully 
 									System.out.println(sourcePeerId +" (I) have completed downloading");
 									complete_file = true;
-									logFileObj.log_completion_of_download(sourcePeerId);			
+									logFileObj.log_completion_of_download(sourcePeerId);
+									//broadcast 'bitfield' message to all the peers	so that they can update their bitfield copy of ur bitfield 			
+//									for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
+//										NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
+//										npiObjAdjacentPeer.sendBitField();
+//									}
 								}
 								else if(!completed_peers.contains(sourcePeerId)){
 									sendRequestMsg();
