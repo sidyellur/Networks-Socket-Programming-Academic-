@@ -1,12 +1,28 @@
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 public class Logs{
+	BufferedWriter logWriter = null;
+	File logFile = null;
+	public Logs() {}
 
-	public static void log_tcp_connection_to(BufferedWriter logWriter, int id1, int id2){
+	public Logs(File logFile) {
+		try {
+			this.logFile = logFile;
+			logWriter = new BufferedWriter(new FileWriter(logFile.getAbsolutePath(),true));
+		}
+		catch(IOException e){
+			e.printStackTrace();
+		}
+	}
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+	public synchronized void log_tcp_connection_to(int id1, int id2){
+
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
@@ -20,9 +36,9 @@ public class Logs{
 		}
 	}
 
-	public static void log_tcp_connection_from(BufferedWriter logWriter, int id1, int id2){
+	public synchronized void log_tcp_connection_from(int id1, int id2){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
@@ -38,9 +54,9 @@ public class Logs{
 	}
 
 	//following function is done
-	public static void log_change_of_preferred_neighbors(BufferedWriter logWriter, int id, int[] id_list){
+	public synchronized void log_change_of_preferred_neighbors(int id, int[] id_list){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
@@ -68,13 +84,13 @@ public class Logs{
 
 	}
 
-	public static void log_change_of_optimistically_unchoked_neighbor(BufferedWriter logWriter, int id1, int id2){
+	public synchronized void log_change_of_optimistically_unchoked_neighbor(int id1, int id2){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
-		log_entry.append(timeStamp + ": Peer [" + "] has the optimistically unchoked neighbor [" + id2 + "].");
+		log_entry.append(timeStamp + ": Peer [" +id1+ "] has the optimistically unchoked neighbor [" + id2 + "].");
 
 
 		try{
@@ -87,9 +103,9 @@ public class Logs{
 
 	}
 
-	public static void log_unchoking(BufferedWriter logWriter, int id1, int id2){
+	public synchronized void log_unchoking(int id1, int id2){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
@@ -103,9 +119,9 @@ public class Logs{
 
 	}
 
-	public static void log_choking(BufferedWriter logWriter, int id1, int id2){
+	public synchronized void log_choking( int id1, int id2){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
@@ -120,8 +136,8 @@ public class Logs{
 	}
 
 	//following function is done
-	public static void log_receiving_have_message(BufferedWriter logWriter, int id1, int id2, int index){
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+	public synchronized void log_receiving_have_message( int id1, int id2, int index){
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 		StringBuffer log_entry = new StringBuffer();
 		log_entry.append(timeStamp + ": Peer [" + id1 +"] received 'have' message from [" + id2+ "] for the piece: " + index + ".");
 
@@ -133,9 +149,9 @@ public class Logs{
 		}
 	}
 
-	public static void log_receiving_interested_message(BufferedWriter logWriter, int id1, int id2){
+	public synchronized void log_receiving_interested_message( int id1, int id2){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
@@ -149,9 +165,9 @@ public class Logs{
 
 	}
 
-	public static void log_receiving_not_interested_message(BufferedWriter logWriter, int id1, int id2){
+	public synchronized void log_receiving_not_interested_message( int id1, int id2){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
@@ -167,9 +183,9 @@ public class Logs{
 	}
 
 	//following function is done
-	public static void log_downloading_a_piece(BufferedWriter logWriter, int id1, int id2, int index, int number_of_pieces){
+	public synchronized void log_downloading_a_piece( int id1, int id2, int index, int number_of_pieces){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 
@@ -185,9 +201,9 @@ public class Logs{
 	}
 
 	//following function is done
-	public static void log_completion_of_download(BufferedWriter logWriter, int id){
+	public synchronized void log_completion_of_download(int id){
 
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 
 		StringBuffer log_entry = new StringBuffer();
 

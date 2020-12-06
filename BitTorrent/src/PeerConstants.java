@@ -3,7 +3,7 @@ public class PeerConstants {
 
 	public static final String CONFIG_FILE = "Common.cfg";
 	public static final String PEER_FILE = "PeerInfo.cfg";
-	public static final String DOWNLOAD_FILE = "TheFile.dat";
+	public static final String DOWNLOAD_FILE = "thefile";
 	public static final String HANDSHAKE_HEADER = "P2PFILESHARINGPROJ";
 	public static final String ZERO_BITS_HANDSHAKE = "0000000000";
 	

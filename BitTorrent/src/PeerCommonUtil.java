@@ -19,16 +19,24 @@ public class PeerCommonUtil {
 	PeerCommonUtil(){}
 
 	//Create peer directory if not created
-	public void makePeerDirectory(int peerId) {
+	public File makePeerDirectory(int peerId) {
+		File logFile = null;
 		try {
 			File peerDir = new File("peer_"+peerId);
 			if(!peerDir.exists()) {
 				peerDir.mkdir();
 			}
+			logFile = new File("log_peer_"+peerId+".log");
+			boolean logFileCreated = logFile.createNewFile();
+			if(logFileCreated) {
+				System.out.println("logfile created");
+			}
+			
 		}
 		catch(Exception e) {
 			e.printStackTrace();
 		}
+		return logFile;
 	}
 
 	//split the whole file into chunks and write into the peer directory as chunks
@@ -52,7 +60,7 @@ public class PeerCommonUtil {
 				}
 				byte[] copy = new byte[chunkLength];
 				String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
-				fileName = "peer_"+peerId+"/"+fileName+"_"+i+".dat";
+				fileName = "peer_"+peerId+"/"+fileName+"_"+i;
 				chunkFiles[i] = new File(fileName);
 				FileOutputStream fos = new FileOutputStream(fileName);
 				fis.read(copy);
@@ -99,7 +107,7 @@ public class PeerCommonUtil {
 	public synchronized byte[] returnPiece(int peerId,int chunkIndex) throws IOException {
 		
 	     String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
-	     fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex+".dat";
+	     fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
 	     File chunkFile = new File(fileName);
 	     FileInputStream fis = new FileInputStream(chunkFile);
 	     int length = (int)chunkFile.length();
@@ -111,7 +119,7 @@ public class PeerCommonUtil {
 	
 	public synchronized void writePiece(int peerId,int chunkIndex,byte[] piece) throws IOException{
 		String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
-		fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex+".dat";
+		fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
 		File file = new File(fileName);
 		FileOutputStream fos = new FileOutputStream(file);
 		fos.write(piece);

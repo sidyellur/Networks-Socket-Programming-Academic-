@@ -1,5 +1,6 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -37,8 +38,8 @@ public class peerProcess {
 	private static int sourcePortNumber = 0;
 	private static AtomicInteger optimisticallyUnchokedPeer = new AtomicInteger(-1);
 	private static boolean complete_file;
-	private static boolean flag = true;
 	private static PeerCommonUtil utilObj = null;
+	private static Logs logFileObj = null;
 
 	class NeighborPeerInteraction {
 		int peerId = -1;
@@ -59,10 +60,11 @@ public class peerProcess {
 		}
 
 		//create a new thread and start interaction 
-		public void startInteraction() {
+		public void startInteraction() throws Exception {
 			NeighborPeerInteractionThread nbit = new NeighborPeerInteractionThread();
 			Thread neighborPeerThread = new Thread(nbit,"Thread_"+peerNode.getPeerId());
 			neighborPeerThread.start();
+			System.out.println(neighborPeerThread.getName() +" started");
 		}
 
 		//convert message into bytes that can be sent to other peers
@@ -303,7 +305,9 @@ public class peerProcess {
 					optimisticallyUnchokedPeer.set(-1);
 				}
 				sendChokeMsg();
-				peersWithEntireFile.incrementAndGet();
+				peerNode.setHaveFile(1);
+				peersWithEntireFile.incrementAndGet(); //if neighbor has completed file
+				System.out.println(peerId +" (neighbor)has finished downloading");
 				if(!complete_file) {//if I haven't completed downloading, then send interested message
 					sendInterestedorNotMsg();
 				}
@@ -312,13 +316,12 @@ public class peerProcess {
 
 		class NeighborPeerInteractionThread implements Runnable{
 
-
 			public void run() {		
 				//System.out.println(peerId);
 				downloadRate.put(peerId, 0);
 				sendBitField();
 				try {
-					while(flag) {
+					while(peersWithEntireFile.get() < totalPeers) {
 
 						//Read first 4 bytes of the message which is size of the payload
 						for(int i = 0;i<4;i++) {
@@ -351,18 +354,21 @@ public class peerProcess {
 							}
 							if(hasFullFile) {
 								peerNode.setHaveFile(1);
-								peersWithEntireFile.incrementAndGet();
+								peersWithEntireFile.incrementAndGet();//if neighbor has the full file initially
+								System.out.println(peerId + " has the full file initially");
 								sendInterestedorNotMsg();//send interested message since the peer has full file
 							}
 						}
 						else if(type == PeerConstants.messageType.INTERESTED.getValue()) {
 							//System.out.println(peerId +" Interested");
 							interested_peers.addIfAbsent(peerId);
+							logFileObj.log_receiving_interested_message(sourcePeerId, peerId);
 						}
-						//if the peer sends not interested message, then remove it from intersted_peerslist and choke it.
+						//if the peer sends not interested message, then remove it from interested_peerslist and choke it.
 						else if(type == PeerConstants.messageType.NOT_INTERESTED.getValue()) {
 							int index = interested_peers.indexOf(peerId);
 							if(index != -1) {
+								logFileObj.log_receiving_not_interested_message(sourcePeerId, peerId);
 								interested_peers.remove(index);
 							}				
 							if(peerId == optimisticallyUnchokedPeer.get()) {
@@ -372,11 +378,13 @@ public class peerProcess {
 						}
 						else if(type == PeerConstants.messageType.CHOKE.getValue()) {
 							//System.out.println(peerId +" has choked me");
+							logFileObj.log_choking(sourcePeerId, peerId);
 
 						}
 						else if(type == PeerConstants.messageType.UNCHOKE.getValue()) {
 							//send request message if peer has some interesting piece that I don't have else do nothing
 							//System.out.println(peerId +" has unchoked me");
+							logFileObj.log_unchoking(sourcePeerId, peerId);
 							sendRequestMsg(); 
 						}
 						else if(type == PeerConstants.messageType.REQUEST.getValue()) {
@@ -388,7 +396,7 @@ public class peerProcess {
 								inputStream.read(payload, i, 1);
 							}
 							int indexPiece = ByteBuffer.wrap(payload).getInt();
-							System.out.println(peerId +" has requested piece " + indexPiece);
+							//System.out.println(peerId +" has requested piece " + indexPiece);
 
 							//send the requested piece only if the peer is either unchoked or optimistically unchoked and if source peer has the piece
 							sendPieceMsg(indexPiece);					
@@ -403,23 +411,30 @@ public class peerProcess {
 							int indexOfPieceRecvd = ByteBuffer.wrap(indexArr).getInt();
 
 							if(bitfieldHM.get(indexOfPieceRecvd) == 0) {
-								System.out.println("Recieved piece " +indexOfPieceRecvd+" from "+peerId);
+								//System.out.println("Recieved piece " +indexOfPieceRecvd+" from "+peerId);
 								bitfieldHM.put(indexOfPieceRecvd, 1);
 								for(int i=0;i<piece.length;i++) {
 									inputStream.read(piece, i, 1);
 								}
 								utilObj.writePiece(sourcePeerId, indexOfPieceRecvd, piece);
+
 								boolean haveICompleted = true;
+								int numberOfPiecesIHave = 0;
 								for(Map.Entry<Integer, Integer> e:bitfieldHM.entrySet()) {
 									if(e.getValue() == 0) {
 										haveICompleted = false;
-										break;
+									}
+									else {
+										numberOfPiecesIHave++;
 									}
 								}
+								logFileObj.log_downloading_a_piece(sourcePeerId, peerId, indexOfPieceRecvd, numberOfPiecesIHave);
 								//check if I have completed the full file, if yes increment peersWithEntireFile
 								if(haveICompleted) {
-									peersWithEntireFile.incrementAndGet();
+									peersWithEntireFile.incrementAndGet(); //check if I have completed the download of file fully 
+									System.out.println(sourcePeerId +" (I) have completed downloading");
 									complete_file = true;
+									logFileObj.log_completion_of_download(sourcePeerId);
 								}
 								else {
 									sendRequestMsg();
@@ -439,7 +454,9 @@ public class peerProcess {
 								inputStream.read(index, i, 1);
 							}
 							int havePieceIndex = ByteBuffer.wrap(index).getInt();
+
 							if(havePieceIndex > -1) {
+								logFileObj.log_receiving_have_message(sourcePeerId, peerId, havePieceIndex);
 								updateNeighbourPeerBitfield(havePieceIndex);
 								checkForCompleteFile();
 							}
@@ -447,14 +464,23 @@ public class peerProcess {
 						}
 
 					}
+					//sendBitField();
 					System.out.println(peerId +" Thread finished");
-					inputStream.close();
-					outputStream.close();
+					System.out.println("Total peers with Full file = "+peersWithEntireFile.get());
+					//TimeUnit.SECONDS.sleep(8);
+					//inputStream.close();
+					//outputStream.close();
 					//socket.close();
 				}
 				catch(IOException e) {
-					e.printStackTrace();
+					System.exit(0);
+					//e.printStackTrace();
 				}
+				catch(Exception e) {
+					System.exit(0);
+					//e.printStackTrace();
+				}
+				System.exit(0);
 			}
 		}
 
@@ -472,7 +498,7 @@ public class peerProcess {
 
 			int unchokeInterval = configFileObj.getUnChokingInterval();
 			try {
-				while(flag) {
+				while(peersWithEntireFile.get() < totalPeers) {
 
 					int interestedPeersSize = interested_peers.size();
 					if(interestedPeersSize > 0) {
@@ -490,10 +516,12 @@ public class peerProcess {
 						else {
 							Random rand = new Random();
 							List<Integer> tempPeersList = new ArrayList<>(interested_peers);
+							int[] preferredPeers = new int[preferredNeighbors];
 							//select preferred Neighbors and unchoke them
 							for(int i=0;i<preferredNeighbors;i++) {
 								int randomIdx = rand.nextInt(tempPeersList.size());
 								int peerId = tempPeersList.get(randomIdx);
+								preferredPeers[i] = peerId;
 								NeighborPeerInteraction npiObj = neighborPeerConnections.get(peerId);
 								//Don't send unchoked if it is already unchoked
 								if(!npiObj.unchoked) {
@@ -501,6 +529,8 @@ public class peerProcess {
 								}							
 								tempPeersList.remove(randomIdx);
 							}
+
+							logFileObj.log_change_of_preferred_neighbors(sourcePeerId, preferredPeers);
 
 							//choke the peers who have not been selected
 							Iterator<Integer> itr = tempPeersList.iterator();
@@ -514,9 +544,11 @@ public class peerProcess {
 					TimeUnit.SECONDS.sleep(unchokeInterval);
 				}
 			}catch(InterruptedException ie) {
-				ie.printStackTrace();
+				System.exit(0);
+				//ie.printStackTrace();
 			}catch(Exception e) {
-				e.printStackTrace();
+				System.exit(0);
+				//e.printStackTrace();
 			}
 			//System.exit(0);
 		}
@@ -527,7 +559,7 @@ public class peerProcess {
 
 		public void run() {
 			try {
-				while(flag) {
+				while(peersWithEntireFile.get() < totalPeers) {
 					if(interested_peers.size() > 0) {
 						int optimisticSleepingInterval = configFileObj.getOptUnChokingInterval();
 						int interestedPeersSize = interested_peers.size();
@@ -537,6 +569,7 @@ public class peerProcess {
 						optimisticallyUnchokedPeer.set(peerId);
 						NeighborPeerInteraction npiObj = neighborPeerConnections.get(peerId);
 						npiObj.sendUnChokeMsg(true);
+						logFileObj.log_change_of_optimistically_unchoked_neighbor(sourcePeerId, peerId);
 						TimeUnit.SECONDS.sleep(optimisticSleepingInterval);
 						optimisticallyUnchokedPeer.set(-1);
 
@@ -547,9 +580,10 @@ public class peerProcess {
 					}
 				}
 			}catch(InterruptedException ie) {
-				ie.printStackTrace();
+				System.exit(0);
+				//ie.printStackTrace();
 			}
-			//	System.exit(0);
+			//System.exit(0);
 		}
 	}
 
@@ -588,6 +622,7 @@ public class peerProcess {
 						NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
 						npi.startInteraction();
 						neighborPeerConnections.put(peerId, npi);
+						logFileObj.log_tcp_connection_to(sourcePeerId, peerId);
 					}		
 					index++;
 					outputStream.flush();
@@ -599,7 +634,9 @@ public class peerProcess {
 				catch(IOException ioe) {
 					ioe.printStackTrace();
 				}
-
+				catch(Exception ie) {
+					ie.printStackTrace();
+				}
 			}			
 		}
 	}
@@ -631,16 +668,20 @@ public class peerProcess {
 					NeighborPeerInteraction npi = new NeighborPeerInteraction(socket,peerObj);
 					npi.startInteraction();
 					neighborPeerConnections.put(peerId, npi);
+					logFileObj.log_tcp_connection_from(sourcePeerId, peerId);
 					index++;
 
 				}
-				listener.close();
+				//	listener.close();
 			}
 			catch(UnknownHostException uhe) {
 				uhe.printStackTrace();
 			}
 			catch(IOException ioe) {
 				ioe.printStackTrace();
+			}
+			catch(Exception ie) {
+				ie.printStackTrace();
 			}
 
 		}
@@ -685,12 +726,14 @@ public class peerProcess {
 		setPeerNodes(peerRows);
 
 		//make peer directory
-		utilObj.makePeerDirectory(sourcePeerId);
+		File logFile = utilObj.makePeerDirectory(sourcePeerId);
+		logFileObj = new Logs(logFile);
 
 		//current peer has file, set bitfield as true for all bits and split the file into chunks
 		int bit = 0;
 		if(complete_file) {
-			peersWithEntireFile.incrementAndGet();
+			peersWithEntireFile.incrementAndGet(); //if I have the file initially
+			System.out.println(sourcePeerId +" (I) have the full file");
 			bit = 1;
 			utilObj.splitFileintoChunks(""+sourcePeerId, configFileObj);
 		}
@@ -719,13 +762,21 @@ public class peerProcess {
 		optUnChokeThread.start();
 		System.out.println("Total Peers "+totalPeers);
 
-		while(flag) {
-			if(peersWithEntireFile.get() == totalPeers) {
-				System.out.println("Exiting");
-				flag = false;
-				Thread.sleep(5000);
+		while(true) {
+			//			for(Map.Entry<Integer,NeighbourPeerNode> e : neighborPeers.entrySet()) {
+			//				int[] bitF = e.getValue().getBitfield();
+			//				if(bitF != null) {
+			//					System.out.println(e.getKey() +"'s bitfield");
+			//					for(int i = 0;i<bitF.length;i++) {
+			//					  System.out.print(bitF[i]);
+			//					}
+			//					System.out.println(" ");
+			//				}			
+			//			}
+			TimeUnit.SECONDS.sleep(10);
+			if(peersWithEntireFile.get() >= totalPeers) {
 				System.exit(0);
-			}	
+			}
 		}
 
 	}
