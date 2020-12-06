@@ -417,7 +417,6 @@ public class peerProcess {
 									inputStream.read(piece, i, 1);
 								}
 								utilObj.writePiece(sourcePeerId, indexOfPieceRecvd, piece);
-
 								boolean haveICompleted = true;
 								int numberOfPiecesIHave = 0;
 								for(Map.Entry<Integer, Integer> e:bitfieldHM.entrySet()) {
@@ -439,12 +438,12 @@ public class peerProcess {
 								else {
 									sendRequestMsg();
 								}
+							}				
 
-								//broadcast 'have' message to all the peers	so that they can update their bitfield copy of ur bitfield and request this piece if they don't have it			
-								for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
-									NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
-									npiObjAdjacentPeer.sendHaveMsg(indexOfPieceRecvd);
-								}
+							//broadcast 'have' message to all the peers	so that they can update their bitfield copy of ur bitfield and request this piece if they don't have it			
+							for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
+								NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
+								npiObjAdjacentPeer.sendHaveMsg(indexOfPieceRecvd);
 							}
 						}
 						//update neighbour peerbitfield, check if the peer has completed the file and update peersWithEntireFile accordingly
