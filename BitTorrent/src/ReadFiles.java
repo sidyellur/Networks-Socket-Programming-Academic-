@@ -15,10 +15,11 @@ public class ReadFiles {
 	public List<String> parseTheFile(String path){
 		List<String> fileContent = new ArrayList<>();
 		if (path != null) {
-			String dir = System.getProperty("user.dir") +"/" +path;
+
+			String dir = System.getProperty("user.dir")+"\\" +path;
 			//System.out.println(dir);
 			try {
-				FileReader fr = new FileReader(path);
+				FileReader fr = new FileReader(dir);
 				BufferedReader br = new BufferedReader(fr);
 				String line = "";
 				while((line =br.readLine()) != null) {

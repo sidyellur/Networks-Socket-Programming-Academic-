@@ -759,7 +759,7 @@ public class peerProcess {
 		setPeerNodes(peerRows);
 
 		//make peer directory
-		File logFile = utilObj.makePeerDirectory(sourcePeerId);
+		File logFile = utilObj.makePeerAndLogDirectory(sourcePeerId);
 		logFileObj = new Logs(logFile);
 
 		//current peer has file, set bitfield as true for all bits and split the file into chunks

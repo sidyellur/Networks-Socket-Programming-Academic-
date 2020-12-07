@@ -200,7 +200,7 @@ public class Logs{
 
 	}
 
-	
+
 	public synchronized void log_completion_of_download(int id){
 
 		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());

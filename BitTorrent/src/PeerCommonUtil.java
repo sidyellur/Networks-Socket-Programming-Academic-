@@ -10,14 +10,14 @@ public class PeerCommonUtil {
 	PeerCommonUtil(){}
 
 	//Create peer directory if not created
-	public File makePeerDirectory(int peerId) {
+	public File makePeerAndLogDirectory(int peerId) {
 		File logFile = null;
 		try {
-			File peerDir = new File("peer_"+peerId);
+			File peerDir = new File(System.getProperty("user.dir")+"\\"+"peer_"+peerId);
 			if(!peerDir.exists()) {
 				peerDir.mkdir();
 			}
-			logFile = new File("log_peer_"+peerId+".log");
+			logFile = new File(System.getProperty("user.dir")+"\\"+"log_peer_"+peerId+".log");
 			boolean logFileCreated = logFile.createNewFile();
 			if(logFileCreated) {
 				System.out.println("logfile created");
@@ -51,7 +51,7 @@ public class PeerCommonUtil {
 				}
 				byte[] copy = new byte[chunkLength];
 				String fileName = PeerConstants.DOWNLOAD_FILE;
-				fileName = "peer_"+peerId+"/"+fileName+"_"+i;
+				fileName = System.getProperty("user.dir")+"\\"+"peer_"+peerId+"\\"+fileName+"_"+i;
 				chunkFiles[i] = new File(fileName);
 				FileOutputStream fos = new FileOutputStream(fileName);
 				fis.read(copy);
@@ -99,7 +99,7 @@ public class PeerCommonUtil {
 	public synchronized byte[] returnPiece(int peerId,int chunkIndex) throws IOException {
 
 		String fileName = PeerConstants.DOWNLOAD_FILE;
-		fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
+		fileName = System.getProperty("user.dir")+"\\"+"peer_"+peerId+"\\"+fileName+"_"+chunkIndex;
 		File chunkFile = new File(fileName);
 		FileInputStream fis = new FileInputStream(chunkFile);
 		int length = (int)chunkFile.length();
@@ -112,7 +112,7 @@ public class PeerCommonUtil {
 	//write a piece that u received to the peer directory
 	public synchronized void writePiece(int peerId,int chunkIndex,byte[] piece) throws IOException{
 		String fileName = PeerConstants.DOWNLOAD_FILE;
-		fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
+		fileName = System.getProperty("user.dir")+"\\"+"peer_"+peerId+"\\"+fileName+"_"+chunkIndex;
 		File file = new File(fileName);
 		FileOutputStream fos = new FileOutputStream(file);
 		fos.write(piece);
@@ -123,12 +123,12 @@ public class PeerCommonUtil {
 	public synchronized void joinChunksintoFile(int peerId,ConfigFile configFileObj) throws IOException{
 		int noOfChunks = configFileObj.getNoOfChunks();
 		String fileName = PeerConstants.DOWNLOAD_FILE;
-		File combinedFile = new File("peer_"+peerId+"/"+fileName);
+		File combinedFile = new File(System.getProperty("user.dir")+"\\"+"peer_"+peerId+"\\"+fileName);
 		FileOutputStream fos = new FileOutputStream(combinedFile);
 		File[] splitFiles = new File[noOfChunks];
 
 		for(int i=0;i<noOfChunks;i++) {
-			splitFiles[i] = new File("peer_"+peerId+"/"+fileName+"_"+i);
+			splitFiles[i] = new File(System.getProperty("user.dir")+"\\"+"peer_"+peerId+"\\"+fileName+"_"+i);
 		}
 
 		for(int i=0;i<noOfChunks;i++) {
