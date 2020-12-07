@@ -53,7 +53,7 @@ public class Logs{
 
 	}
 
-	//following function is done
+
 	public synchronized void log_change_of_preferred_neighbors(int id, int[] id_list){
 
 		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
@@ -135,7 +135,7 @@ public class Logs{
 
 	}
 
-	//following function is done
+
 	public synchronized void log_receiving_have_message( int id1, int id2, int index){
 		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
 		StringBuffer log_entry = new StringBuffer();
@@ -182,7 +182,7 @@ public class Logs{
 
 	}
 
-	//following function is done
+
 	public synchronized void log_downloading_a_piece( int id1, int id2, int index, int number_of_pieces){
 
 		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
@@ -200,7 +200,7 @@ public class Logs{
 
 	}
 
-	//following function is done
+	
 	public synchronized void log_completion_of_download(int id){
 
 		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());

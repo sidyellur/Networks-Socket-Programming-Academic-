@@ -6,7 +6,7 @@ import java.io.IOException;
 
 //Write all the common helper functions here
 public class PeerCommonUtil {
-	
+
 	PeerCommonUtil(){}
 
 	//Create peer directory if not created
@@ -22,7 +22,7 @@ public class PeerCommonUtil {
 			if(logFileCreated) {
 				System.out.println("logfile created");
 			}
-			
+
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -57,7 +57,7 @@ public class PeerCommonUtil {
 				fis.read(copy);
 				fos.write(copy);
 				fos.close();
-			//	System.out.println(chunkLength);
+				//	System.out.println(chunkLength);
 				i++;
 			}
 			fis.close();
@@ -90,24 +90,26 @@ public class PeerCommonUtil {
 				hspacket[i] = peerIdBytes[i - headerBytes.length - zeroBytes.length];
 			}
 		}
-	
+
 		return hspacket; 
 
 	}
-	
+
+	//return a piece requested by other peers
 	public synchronized byte[] returnPiece(int peerId,int chunkIndex) throws IOException {
-		
-	     String fileName = PeerConstants.DOWNLOAD_FILE;
-	     fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
-	     File chunkFile = new File(fileName);
-	     FileInputStream fis = new FileInputStream(chunkFile);
-	     int length = (int)chunkFile.length();
-	     byte[] chunk = new byte[length];
-	     fis.read(chunk);
-	     fis.close();
-	     return chunk;
+
+		String fileName = PeerConstants.DOWNLOAD_FILE;
+		fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
+		File chunkFile = new File(fileName);
+		FileInputStream fis = new FileInputStream(chunkFile);
+		int length = (int)chunkFile.length();
+		byte[] chunk = new byte[length];
+		fis.read(chunk);
+		fis.close();
+		return chunk;
 	}
-	
+
+	//write a piece that u received to the peer directory
 	public synchronized void writePiece(int peerId,int chunkIndex,byte[] piece) throws IOException{
 		String fileName = PeerConstants.DOWNLOAD_FILE;
 		fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
@@ -116,19 +118,19 @@ public class PeerCommonUtil {
 		fos.write(piece);
 		fos.close();
 	}
-	
+
+	//join the whole file from chunks of pieces once all the pieces have been downloaded
 	public synchronized void joinChunksintoFile(int peerId,ConfigFile configFileObj) throws IOException{
 		int noOfChunks = configFileObj.getNoOfChunks();
-//		int chunkSize = configFileObj.getChunkSize();
-//		int fileSize = configFileObj.getFileSize();
-		File[] splitFiles = new File[noOfChunks];
 		String fileName = PeerConstants.DOWNLOAD_FILE;
 		File combinedFile = new File("peer_"+peerId+"/"+fileName);
+		FileOutputStream fos = new FileOutputStream(combinedFile);
+		File[] splitFiles = new File[noOfChunks];
+
 		for(int i=0;i<noOfChunks;i++) {
 			splitFiles[i] = new File("peer_"+peerId+"/"+fileName+"_"+i);
 		}
-		FileOutputStream fos = new FileOutputStream(combinedFile);
-		
+
 		for(int i=0;i<noOfChunks;i++) {
 			FileInputStream fis = new FileInputStream(splitFiles[i]);
 			int lengthOfChunkFile = (int)splitFiles[i].length();

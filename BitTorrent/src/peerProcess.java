@@ -136,7 +136,7 @@ public class peerProcess {
 				ie.printStackTrace();
 			}			
 		}
-		
+
 		public synchronized void sendCompleteMsg() {
 			byte[] message = getMessage(PeerConstants.messageType.COMPLETE.getValue(),null);
 			try {
@@ -144,7 +144,8 @@ public class peerProcess {
 				outputStream.flush();
 			}
 			catch(IOException ie) {
-				ie.printStackTrace();
+				System.exit(0);
+				//ie.printStackTrace();
 			}
 		}
 
@@ -287,10 +288,10 @@ public class peerProcess {
 			int[] peer_bitfield = peerNode.getBitfield();
 			peer_bitfield[havePieceIndex] = 1;
 			peerNode.setBitfield(peer_bitfield);
-//			System.out.println(peerNode.getPeerId()+"'s file");
-//			for(int i = 0;i<peer_bitfield.length;i++)
-//			   System.out.print(peer_bitfield[i]);
-//			System.out.println("");
+			//			System.out.println(peerNode.getPeerId()+"'s file");
+			//			for(int i = 0;i<peer_bitfield.length;i++)
+			//			   System.out.print(peer_bitfield[i]);
+			//			System.out.println("");
 			if(bitfieldHM.get(havePieceIndex) == 0) {
 				ByteBuffer bb = ByteBuffer.allocate(4);
 				byte[] payload = bb.putInt(havePieceIndex).array();
@@ -328,7 +329,7 @@ public class peerProcess {
 					peersWithEntireFile.incrementAndGet(); //if neighbor has completed file
 					System.out.println(peerId +" (neighbor)has finished downloading");			
 				}
-				
+
 				if(!complete_file) {//if I haven't completed downloading, then send interested message
 					sendInterestedorNotMsg();
 				}
@@ -460,10 +461,10 @@ public class peerProcess {
 									TimeUnit.SECONDS.sleep(2);
 									utilObj.joinChunksintoFile(sourcePeerId, configFileObj);
 									//broadcast 'bitfield' message to all the peers	so that they can update their bitfield copy of ur bitfield 			
-//									for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
-//										NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
-//										npiObjAdjacentPeer.sendBitField();
-//									}
+									//									for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
+									//										NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
+									//										npiObjAdjacentPeer.sendBitField();
+									//									}
 								}
 								else if(!completed_peers.contains(sourcePeerId)){
 									sendRequestMsg();
@@ -804,11 +805,17 @@ public class peerProcess {
 					NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
 					npiObjAdjacentPeer.sendCompleteMsg();
 				}
-				
+
 				TimeUnit.SECONDS.sleep(10);
 				System.out.println("Correctly exiting");
 				System.exit(0);
 			}
+			//			else {
+			//				for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
+			//					NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
+			//					npiObjAdjacentPeer.sendBitField();
+			//				}
+			//			}
 		}
 
 	}
