@@ -457,6 +457,8 @@ public class peerProcess {
 									System.out.println(sourcePeerId +" (I) have completed downloading");
 									complete_file = true;
 									logFileObj.log_completion_of_download(sourcePeerId);
+									TimeUnit.SECONDS.sleep(2);
+									utilObj.joinChunksintoFile(sourcePeerId, configFileObj);
 									//broadcast 'bitfield' message to all the peers	so that they can update their bitfield copy of ur bitfield 			
 //									for(Map.Entry<Integer, NeighborPeerInteraction> entry:neighborPeerConnections.entrySet()) {
 //										NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
@@ -768,6 +770,7 @@ public class peerProcess {
 			System.out.println(sourcePeerId +" (I) have the full file");
 			bit = 1;
 			utilObj.splitFileintoChunks(""+sourcePeerId, configFileObj);
+			utilObj.joinChunksintoFile(sourcePeerId, configFileObj);
 		}
 
 		for(int i = 0;i<totalChunks;i++) {
@@ -801,6 +804,7 @@ public class peerProcess {
 					NeighborPeerInteraction npiObjAdjacentPeer = entry.getValue();
 					npiObjAdjacentPeer.sendCompleteMsg();
 				}
+				
 				TimeUnit.SECONDS.sleep(10);
 				System.out.println("Correctly exiting");
 				System.exit(0);

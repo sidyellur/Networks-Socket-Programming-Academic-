@@ -50,7 +50,7 @@ public class PeerCommonUtil {
 					chunkLength = fileSize - chunkstobeCopied;			
 				}
 				byte[] copy = new byte[chunkLength];
-				String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
+				String fileName = PeerConstants.DOWNLOAD_FILE;
 				fileName = "peer_"+peerId+"/"+fileName+"_"+i;
 				chunkFiles[i] = new File(fileName);
 				FileOutputStream fos = new FileOutputStream(fileName);
@@ -97,7 +97,7 @@ public class PeerCommonUtil {
 	
 	public synchronized byte[] returnPiece(int peerId,int chunkIndex) throws IOException {
 		
-	     String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
+	     String fileName = PeerConstants.DOWNLOAD_FILE;
 	     fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
 	     File chunkFile = new File(fileName);
 	     FileInputStream fis = new FileInputStream(chunkFile);
@@ -109,11 +109,34 @@ public class PeerCommonUtil {
 	}
 	
 	public synchronized void writePiece(int peerId,int chunkIndex,byte[] piece) throws IOException{
-		String fileName = PeerConstants.DOWNLOAD_FILE.substring(0, PeerConstants.DOWNLOAD_FILE.length()-4);
+		String fileName = PeerConstants.DOWNLOAD_FILE;
 		fileName = "peer_"+peerId+"/"+fileName+"_"+chunkIndex;
 		File file = new File(fileName);
 		FileOutputStream fos = new FileOutputStream(file);
 		fos.write(piece);
+		fos.close();
+	}
+	
+	public synchronized void joinChunksintoFile(int peerId,ConfigFile configFileObj) throws IOException{
+		int noOfChunks = configFileObj.getNoOfChunks();
+//		int chunkSize = configFileObj.getChunkSize();
+//		int fileSize = configFileObj.getFileSize();
+		File[] splitFiles = new File[noOfChunks];
+		String fileName = PeerConstants.DOWNLOAD_FILE;
+		File combinedFile = new File("peer_"+peerId+"/"+fileName);
+		for(int i=0;i<noOfChunks;i++) {
+			splitFiles[i] = new File("peer_"+peerId+"/"+fileName+"_"+i);
+		}
+		FileOutputStream fos = new FileOutputStream(combinedFile);
+		
+		for(int i=0;i<noOfChunks;i++) {
+			FileInputStream fis = new FileInputStream(splitFiles[i]);
+			int lengthOfChunkFile = (int)splitFiles[i].length();
+			byte[] readChunkFile = new byte[lengthOfChunkFile];
+			fis.read(readChunkFile);
+			fos.write(readChunkFile);
+			fis.close();
+		}
 		fos.close();
 	}
 }
