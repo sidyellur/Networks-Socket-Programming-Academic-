@@ -9,8 +9,11 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -324,6 +327,7 @@ public class peerProcess {
 				sendChokeMsg();
 				peerNode.setHaveFile(1);
 				if(!completed_peers.contains(peerId)) {
+					downloadRate.put(peerId,-1);
 					completed_peers.add(peerId);
 					peersWithEntireFile.incrementAndGet(); //if neighbor has completed file
 					System.out.println(peerId +" (neighbor)has finished downloading");			
@@ -431,7 +435,8 @@ public class peerProcess {
 								inputStream.read(indexArr,i,1);
 							}
 							int indexOfPieceRecvd = ByteBuffer.wrap(indexArr).getInt();
-
+							int downloadRatePeer = downloadRate.get(peerId);
+							downloadRate.put(peerId, downloadRatePeer+1);
 							if(bitfieldHM.get(indexOfPieceRecvd) == 0) {
 								//System.out.println("Recieved piece " +indexOfPieceRecvd+" from "+peerId);
 								bitfieldHM.put(indexOfPieceRecvd, 1);
@@ -526,6 +531,18 @@ public class peerProcess {
 
 	class ChokeUnChoke implements Runnable{
 
+		public List<Map.Entry<Integer, Integer> > getPeersAccordingToDownloadRate() {
+			List<Map.Entry<Integer, Integer> > sortedPeersList = new LinkedList<Map.Entry<Integer, Integer> >(downloadRate.entrySet()); 
+			Collections.sort(sortedPeersList, new Comparator<Map.Entry<Integer, Integer> >() { 
+				public int compare(Map.Entry<Integer, Integer> o1,  
+						Map.Entry<Integer, Integer> o2) 
+				{ 
+					return (o1.getValue()).compareTo(o2.getValue()); 
+				} 
+			});
+			return sortedPeersList;
+		}
+
 		public void run() {
 
 			int unchokeInterval = configFileObj.getUnChokingInterval();
@@ -535,6 +552,7 @@ public class peerProcess {
 					int interestedPeersSize = interested_peers.size();
 					if(interestedPeersSize > 0) {
 						int preferredNeighbors = configFileObj.getNoOfNeighbors();
+
 						if(interestedPeersSize < preferredNeighbors) {
 							Iterator<Integer> itr = interested_peers.iterator();
 							while(itr.hasNext()) {
@@ -546,6 +564,12 @@ public class peerProcess {
 							}
 						}
 						else {
+							//Get interested peers according to download rate and add them or select randomly if the peer has full file
+							List<Map.Entry<Integer, Integer> > sortedPeersMapList = getPeersAccordingToDownloadRate();
+							List<Integer> sortedPeersDR = new ArrayList<>();
+							for(Map.Entry<Integer, Integer> e:sortedPeersMapList) {
+								sortedPeersDR.add(e.getKey());
+							}
 							Random rand = new Random();
 							List<Integer> tempPeersList = new ArrayList<>(interested_peers);
 							int[] preferredPeers = new int[preferredNeighbors];
