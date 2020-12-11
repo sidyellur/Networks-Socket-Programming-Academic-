@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
@@ -16,7 +17,7 @@ public class ReadFiles {
 		List<String> fileContent = new ArrayList<>();
 		if (path != null) {
 
-			String dir = System.getProperty("user.dir")+"\\" +path;
+			String dir = System.getProperty("user.dir")+File.separator+path;
 			//System.out.println(dir);
 			try {
 				FileReader fr = new FileReader(dir);
