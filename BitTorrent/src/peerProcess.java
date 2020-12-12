@@ -509,6 +509,7 @@ public class peerProcess {
 
 						}
 						else if(type == PeerConstants.messageType.COMPLETE.getValue()) {
+							logFileObj.log_completion_of_process();
 							System.exit(0);
 						}
 
@@ -844,6 +845,7 @@ public class peerProcess {
 
 				TimeUnit.SECONDS.sleep(10);
 				System.out.println("Correctly exiting");
+				logFileObj.log_completion_of_process();
 				System.exit(0);
 			}
 			//			else {

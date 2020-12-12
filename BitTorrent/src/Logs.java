@@ -340,5 +340,22 @@ public class Logs{
 		}catch(Exception e) {
 		}
 	}
+	
+	public synchronized void log_completion_of_process(){
+
+		String timeStamp = new SimpleDateFormat("y-M-d 'at' h:m:s a z").format(Calendar.getInstance().getTime());
+
+		StringBuffer log_entry = new StringBuffer();
+
+		log_entry.append(timeStamp + ": All peers have finished downloading. So stopping the service");
+
+		try{
+			logWriter.write(log_entry.toString());
+			logWriter.newLine();
+			logWriter.flush();
+		}catch(Exception e) {
+		}
+	}
+	
 
 }
