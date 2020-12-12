@@ -133,6 +133,7 @@ public class peerProcess {
 			try {
 				outputStream.write(message);
 				outputStream.flush();
+				logFileObj.log_bitfield_sent(sourcePeerId, peerId);
 			}
 			catch(IOException ie) {
 				ie.printStackTrace();
@@ -209,6 +210,12 @@ public class peerProcess {
 			message = isInterested ? getMessage(PeerConstants.messageType.INTERESTED.getValue(),null):getMessage(PeerConstants.messageType.NOT_INTERESTED.getValue(),null);		
 			try {
 				outputStream.write(message);
+				if(isInterested) {
+					logFileObj.log_send_interested_message(sourcePeerId, peerId);
+				}
+				else {
+					logFileObj.log_send_not_interested_message(sourcePeerId, peerId);
+				}
 				outputStream.flush();
 			}catch(IOException ie) {
 				ie.printStackTrace();
@@ -244,6 +251,7 @@ public class peerProcess {
 				byte[] message = getMessage(PeerConstants.messageType.REQUEST.getValue(),payload);
 				try {
 					outputStream.write(message);
+					logFileObj.log_send_request_message(sourcePeerId, peerId, randomChunkIdx);
 					outputStream.flush();
 				}catch(IOException ie) {
 					ie.printStackTrace();
@@ -266,6 +274,7 @@ public class peerProcess {
 					System.arraycopy(piece, 0, payload, 4, piece.length);
 					byte[] pieceMsg = getMessage(PeerConstants.messageType.PIECE.getValue(),payload);
 					outputStream.write(pieceMsg);
+					logFileObj.log_send_piece_message(sourcePeerId, peerId, pieceIndex);
 					outputStream.flush();
 				}catch(IOException ie){
 					ie.printStackTrace();
@@ -280,6 +289,7 @@ public class peerProcess {
 			try {
 				outputStream.write(message);
 				outputStream.flush();
+				logFileObj.log_send_have_message(sourcePeerId, peerId, pieceIndex);
 			}catch(IOException ie) {
 				ie.printStackTrace();
 			}
@@ -371,6 +381,7 @@ public class peerProcess {
 							peerNode.setBitfield(peer_bitfield);
 							//if peer has full file, then increase peersWithEntireFile
 							boolean hasFullFile = true;
+							logFileObj.log_bitfield_received(sourcePeerId, peerId);
 							for(int i=0;i<peer_bitfield.length;i++) {
 								if(peer_bitfield[i] == 0) {
 									hasFullFile = false;
@@ -423,6 +434,7 @@ public class peerProcess {
 							}
 							int indexPiece = ByteBuffer.wrap(payload).getInt();
 							//System.out.println(peerId +" has requested piece " + indexPiece);
+							logFileObj.log_receiving_request_message(sourcePeerId, peerId, indexPiece);
 
 							//send the requested piece only if the peer is either unchoked or optimistically unchoked and if source peer has the piece
 							sendPieceMsg(indexPiece);					
@@ -785,6 +797,7 @@ public class peerProcess {
 		//make peer directory
 		File logFile = utilObj.makePeerAndLogDirectory(sourcePeerId);
 		logFileObj = new Logs(logFile);
+		logFileObj.log_readCommonFile(sourcePeerId, configFileObj);
 
 		//current peer has file, set bitfield as true for all bits and split the file into chunks
 		int bit = 0;
